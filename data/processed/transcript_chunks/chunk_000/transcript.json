@@ -1,0 +1,22 @@
+{
+  "source_audio": "data\\processed\\enhanced_audio\\chunks\\chunk_000.wav",
+  "language": "fr",
+  "language_probability": 0.9317,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 9.0,
+      "text": "Je voyais maintenant que c'est très bien, donc de temps en temps, faites un peu de bruit pour que ça soit positif."
+    },
+    {
+      "start": 9.0,
+      "end": 18.14,
+      "text": "Maintenant, on va commencer par la molétique, donc la molétique c'est quoi ? On va commencer par ce qui est la molétique,"
+    },
+    {
+      "start": 18.14,
+      "end": 29.99,
+      "text": "et plus le temps passe, plus on va aller en zone dans telle ou telle partie. Donc, nous sommes tous amenés dans notre vie quotidienne"
+    }
+  ]
+}
