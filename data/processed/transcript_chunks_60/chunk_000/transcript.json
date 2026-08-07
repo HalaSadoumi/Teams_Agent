@@ -1,0 +1,47 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_000.wav",
+  "language": "fr",
+  "language_probability": 0.8732,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 9.0,
+      "text": "C'est ce que je voyais maintenant, c'est très bien, donc de temps en temps, faites un peu de bruit pour que ça soit positif."
+    },
+    {
+      "start": 9.0,
+      "end": 18.14,
+      "text": "Maintenant, on va commencer par la monétique, donc la monétique c'est quoi ? On va commencer par ce qui est la monétique,"
+    },
+    {
+      "start": 18.14,
+      "end": 25.99,
+      "text": "et plus le temps passe, plus on va aller en zone dans telle ou telle partie."
+    },
+    {
+      "start": 25.99,
+      "end": 31.99,
+      "text": "Donc nous sommes tous amenés dans notre vie quotidienne de payer les biens ou des services."
+    },
+    {
+      "start": 31.99,
+      "end": 39.99,
+      "text": "C'est le quotidien, chacun de nous, donc la vie quotidienne, il doit payer des choses, il doit payer un service,"
+    },
+    {
+      "start": 39.99,
+      "end": 48.99,
+      "text": "ou il doit payer un bien, il achète un bien, il achète quoi manger, il achète un du jour, il fait l'hôtel, quelque chose comme ça."
+    },
+    {
+      "start": 48.99,
+      "end": 57.99,
+      "text": "Pour faire le bien, continuez ce bien-là, il n'y a plus sur manière, il y a les billets blancs, il y a des chèques,"
+    },
+    {
+      "start": 57.99,
+      "end": 59.99,
+      "text": "il n'y a vraiment de..."
+    }
+  ]
+}

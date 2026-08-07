@@ -1,0 +1,47 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_004.wav",
+  "language": "fr",
+  "language_probability": 0.9128,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 8.08,
+      "text": "dire, quelqu'un qui est à la carte et quelqu'un qui va s'en servir et quelqu'un qui va"
+    },
+    {
+      "start": 8.08,
+      "end": 15.28,
+      "text": "servir sa carte porteur comme un son. Et bien sûr, lorsqu'on parle des choses directes,"
+    },
+    {
+      "start": 15.28,
+      "end": 22.56,
+      "text": "sûrement, il est juste indirect. La première des choses, c'est que moi en tant qu'emporteur,"
+    },
+    {
+      "start": 22.56,
+      "end": 27.12,
+      "text": "je ne suis pas autorisé à faire la classe chez moi, je ne peux pas la faire et chez"
+    },
+    {
+      "start": 27.12,
+      "end": 32.64,
+      "text": "moi, c'est pour cela qu'il y a ce qu'on appelle un acteur indirect. On appelle une émetture."
+    },
+    {
+      "start": 32.64,
+      "end": 40.88,
+      "text": "Émetture city, c'est un établissement qui est autorisé à donner des cas. Émetture,"
+    },
+    {
+      "start": 40.88,
+      "end": 49.84,
+      "text": "on l'appelle échoueur, par exemple on appelle monstère le Gétard, qui est un qui a émetté la carte."
+    },
+    {
+      "start": 49.84,
+      "end": 57.52,
+      "text": "Parce que tous les porteurs ne sont pas autorisés à fabriquer eux-mêmes leurs cas."
+    }
+  ]
+}

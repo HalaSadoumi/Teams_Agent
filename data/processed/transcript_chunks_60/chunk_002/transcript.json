@@ -1,0 +1,42 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_002.wav",
+  "language": "fr",
+  "language_probability": 0.8778,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 8.1,
+      "text": "qui garantit la valeur, le chef l'a des choses, le chef la valeur est garantie par la haute,"
+    },
+    {
+      "start": 8.1,
+      "end": 15.06,
+      "text": "qui a aimé le chef, le chef Moulton d'Atron. Donc, même la case bancaire, la case bancaire"
+    },
+    {
+      "start": 15.06,
+      "end": 22.3,
+      "text": "en tant que classique, s'il n'y a pas un établissement derrière, donc aussi milliard"
+    },
+    {
+      "start": 22.3,
+      "end": 29.58,
+      "text": "pour garantir la valeur, ça n'a aucune valeur. S'attentionnant, on va le retrouver"
+    },
+    {
+      "start": 29.58,
+      "end": 45.28,
+      "text": "après. Acteurs directs, c'est-à-dire qu'il y a des acteurs qui sont là. Les acteurs qui"
+    },
+    {
+      "start": 45.28,
+      "end": 51.12,
+      "text": "sont deux. Le premier acteur direct, c'est le porteur de la carte. Donc, je ne peux"
+    },
+    {
+      "start": 51.12,
+      "end": 58.24,
+      "text": "pas imaginer une opération monique. Si je n'ai pas devant moi quelqu'un, il y a un"
+    }
+  ]
+}

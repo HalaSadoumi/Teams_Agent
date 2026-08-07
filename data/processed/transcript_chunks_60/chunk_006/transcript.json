@@ -1,0 +1,67 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_006.wav",
+  "language": "fr",
+  "language_probability": 0.9129,
+  "segments": [
+    {
+      "start": 0.56,
+      "end": 5.88,
+      "text": "Chaque fois qu'une carte est présente chez un client, chez un commerçant,"
+    },
+    {
+      "start": 5.88,
+      "end": 11.0,
+      "text": "chaque fois qu'un porte-de-carte présente une carte chez un commerçant,"
+    },
+    {
+      "start": 11.0,
+      "end": 15.68,
+      "text": "le commerçant ne peut vous donner l'argent, ne peut le servir"
+    },
+    {
+      "start": 15.68,
+      "end": 20.2,
+      "text": "tant qu'il n'a pas eu un accord en réel de chez les metteurs,"
+    },
+    {
+      "start": 20.2,
+      "end": 24.81,
+      "text": "en lui disant que la carte n'a pas de problème,"
+    },
+    {
+      "start": 24.81,
+      "end": 26.25,
+      "text": "ce qu'on appelle l'autorisation."
+    },
+    {
+      "start": 26.25,
+      "end": 31.41,
+      "text": "Chaque fois qu'une carte est devant un commerçant,"
+    },
+    {
+      "start": 31.61,
+      "end": 39.73,
+      "text": "le commerçant ne peut servir le porteur tant qu'il n'a pas poussé en temps réel une réponse,"
+    },
+    {
+      "start": 39.73,
+      "end": 42.17,
+      "text": "en lui disant que la carte n'a pas de problème,"
+    },
+    {
+      "start": 42.17,
+      "end": 46.25,
+      "text": "bien sûr le metteur peut lui dire que la carte n'a pas de problème,"
+    },
+    {
+      "start": 46.25,
+      "end": 50.93,
+      "text": "mais c'est son rêve, parce que sinon le commerçant ne va pas être remboursé,"
+    },
+    {
+      "start": 50.93,
+      "end": 54.25,
+      "text": "il ne va pas recevoir son âge."
+    }
+  ]
+}

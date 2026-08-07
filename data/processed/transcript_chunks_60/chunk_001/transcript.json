@@ -1,0 +1,27 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_001.wav",
+  "language": "fr",
+  "language_probability": 0.9442,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 18.0,
+      "text": "Et puis il y a ce qu'on appelle la carte bancaire. Vous voyez que la première des choses pour mettre un peu le carte, c'est que la carte bancaire est un moyen de paiement qui vient s'ajouter à notre moyen."
+    },
+    {
+      "start": 19.0,
+      "end": 34.0,
+      "text": "Donc c'est une continuité, c'est vrai que c'est une grande révolution, une grande révolution, une grande révolution parce que nous avions des moyens de paiement, maintenant il n'est plus simplifié, c'est tout."
+    },
+    {
+      "start": 35.0,
+      "end": 49.0,
+      "text": "Et vous pouvez le voir que dans ces quatre moyens de paiement, nous avons l'avant au quelqu'un qui joue le rôle de l'avant pour ce que c'est le système."
+    },
+    {
+      "start": 49.0,
+      "end": 60.0,
+      "text": "Parce que les moyens de paiement en réalité, le biais est en compte que le biais n'a pas de valeur, c'est parce que l'avant du pays, l'arrière, l'avant du centre du pays..."
+    }
+  ]
+}

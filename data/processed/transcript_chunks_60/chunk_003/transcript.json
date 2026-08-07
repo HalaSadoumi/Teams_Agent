@@ -1,0 +1,42 @@
+{
+  "source_audio": "data\\processed\\transcription_audio_chunks\\chunk_003.wav",
+  "language": "fr",
+  "language_probability": 0.8365,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 9.48,
+      "text": "donc il y a quelqu'un qui doit avoir une carte entre elle on l'appelle en français porteur de"
+    },
+    {
+      "start": 9.48,
+      "end": 17.26,
+      "text": "carte en anglais on l'appelle carrosat en arabe on l'appelle hanel bétard et bien sûr ce"
+    },
+    {
+      "start": 17.26,
+      "end": 25.92,
+      "text": "porteur là il faut qu'elle trouve ou l'utiliser et ce qu'on appelle un commencant commencant au"
+    },
+    {
+      "start": 25.92,
+      "end": 35.16,
+      "text": "merchant au télgiens si un établissement à qui je présente la carte et je présente la carte pour être"
+    },
+    {
+      "start": 35.16,
+      "end": 44.32,
+      "text": "servi ça peut être un hôtel ça peut être un restaurant ça peut être un bijouci ça peut être"
+    },
+    {
+      "start": 44.32,
+      "end": 51.32,
+      "text": "pissier automatique parce que le pissier automatique il est considéré comme un commencant particulier"
+    },
+    {
+      "start": 51.32,
+      "end": 59.76,
+      "text": "pourquoi parce que je lui donne la carte et le môtre du cash donc nous avons deux"
+    }
+  ]
+}

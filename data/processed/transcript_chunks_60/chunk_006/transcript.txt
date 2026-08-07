@@ -1,0 +1,12 @@
+[00000.56 - 00005.88] Chaque fois qu'une carte est présente chez un client, chez un commerçant,
+[00005.88 - 00011.00] chaque fois qu'un porte-de-carte présente une carte chez un commerçant,
+[00011.00 - 00015.68] le commerçant ne peut vous donner l'argent, ne peut le servir
+[00015.68 - 00020.20] tant qu'il n'a pas eu un accord en réel de chez les metteurs,
+[00020.20 - 00024.81] en lui disant que la carte n'a pas de problème,
+[00024.81 - 00026.25] ce qu'on appelle l'autorisation.
+[00026.25 - 00031.41] Chaque fois qu'une carte est devant un commerçant,
+[00031.61 - 00039.73] le commerçant ne peut servir le porteur tant qu'il n'a pas poussé en temps réel une réponse,
+[00039.73 - 00042.17] en lui disant que la carte n'a pas de problème,
+[00042.17 - 00046.25] bien sûr le metteur peut lui dire que la carte n'a pas de problème,
+[00046.25 - 00050.93] mais c'est son rêve, parce que sinon le commerçant ne va pas être remboursé,
+[00050.93 - 00054.25] il ne va pas recevoir son âge.
