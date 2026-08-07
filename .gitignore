@@ -1,8 +1,12 @@
-.venv/
+.venv*/
 __pycache__/
 *.py[cod]
+.cache/
 
 # Original and generated media are kept locally, not in Git.
 data/input/
 data/processed/
 data/output/
+
+# Local executable tools.
+tools/*.exe
