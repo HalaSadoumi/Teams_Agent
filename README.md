@@ -68,12 +68,12 @@ The pipeline is organized as modular stages:
 - `src/script.py`: script rewriting and scene generation
 - `src/storyboard.py`: storyboard generation
 - `src/audio_enhancement.py`: audio normalization and optional denoising helper
+- `src/ocr.py`: OCR extraction from keyframes with pytesseract/easyocr fallback
 - `src/assemble.py`: baseline rendering support
 - `src/transcribe.py`: existing local transcription script
 - `src/render_video.py`: existing caption rendering helper
 - `src/extract_keyframes.py`: existing keyframe extraction helper
 - `src/create_storyboard.py`: existing storyboard markdown helper
-- `src/audio_enhancement.py`: existing audio normalization and denoising helper
 
 ## Usage
 
@@ -82,6 +82,11 @@ Run the pipeline from the repository root:
 ```powershell
 python src\pipeline.py path\to\training_video.mp4 --output-dir data\processed
 ```
+
+Optional OCR dependencies:
+- Install `Pillow` and `pytesseract` for local OCR support.
+- If using `pytesseract`, install the Tesseract binary on Windows and make sure it is available on PATH.
+- `easyocr` can also be installed as an optional fallback for text extraction without external OCR binaries.
 
 The command will create:
 
