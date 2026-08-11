@@ -35,11 +35,13 @@ The pipeline is organized as modular stages:
 
 4. `analysis`
    - merge transcript segments and visual references into structured scenes
+   - split long continuous recordings into semantically coherent scenes
    - attach OCR, visual labels, and scene metadata
 
 5. `chapterize`
    - detect chapter boundaries from scene structure
    - create chapter titles, summaries, and key points
+   - use semantic topic segmentation to split long continuous recordings into meaningful course chapters
 
 6. `script`
    - convert raw transcript segments into cleaner course narration
@@ -92,11 +94,10 @@ The command will create:
 
 ## Next steps
 
-The current code focuses on architecture and pipeline scaffolding. Future work includes:
+The current code focuses on architecture and pipeline scaffolding. The chapter pipeline now uses semantic topic similarity to improve chapter boundaries for long continuous recordings. Future work includes:
 
 - adding language-aware speaker diarization
-- replacing chapter heuristics with semantic topic detection
-- integrating stronger OCR and visual analysis for slides and screens
+- strengthening OCR and visual analysis for slides and screens
 - adding LLM-based script rewriting
 - generating polished storyboard visuals
 - assembling a finished video course
