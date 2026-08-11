@@ -7,6 +7,7 @@ from typing import List
 from .analysis import build_scenes
 from .asr import transcribe_audio
 from .audio_enhancement import enhance_audio
+from .assemble import assemble_course
 from .chapterize import detect_chapters
 from .ingest import extract_audio, extract_keyframes, normalize_video_path
 from .model import CoursePackage
@@ -37,15 +38,25 @@ def build_course_package(
     scenes = rewrite_script(chapters, scenes)
     storyboard = generate_storyboard(chapters, scenes)
 
+    output_video_path = output_dir / "final_course.mp4"
     package = CoursePackage(
         source_video=str(video_path),
         source_audio=str(audio_path),
         enhanced_audio=str(enhanced_audio_path),
+        assembled_video=str(output_video_path),
         transcript=str(output_dir / "transcript" / "transcript.json"),
         chapters=chapters,
         scenes=scenes,
         storyboard=storyboard,
     )
+
+    assemble_course(
+        source_video=video_path,
+        narration_audio=enhanced_audio_path,
+        captions_path=output_dir / "transcript" / "captions.srt",
+        output_video=output_video_path,
+    )
+
     package.save_json(output_dir / "course_package.json")
     return package
 
