@@ -21,7 +21,11 @@ The pipeline is organized as modular stages:
    - extract audio from the source video
    - create reference keyframes
 
-2. `asr`
+2. `audio_enhancement`
+   - standardize audio to 48 kHz mono WAV
+   - optionally denoise if DeepFilterNet is available
+
+3. `asr`
    - transcribe audio into timestamped segments
    - preserve speaker and timing information
 
@@ -61,6 +65,7 @@ The pipeline is organized as modular stages:
 - `src/chapterize.py`: chapter detection logic
 - `src/script.py`: script rewriting and scene generation
 - `src/storyboard.py`: storyboard generation
+- `src/audio_enhancement.py`: audio normalization and optional denoising helper
 - `src/assemble.py`: baseline rendering support
 - `src/transcribe.py`: existing local transcription script
 - `src/render_video.py`: existing caption rendering helper
@@ -79,6 +84,7 @@ python src\pipeline.py path\to\training_video.mp4 --output-dir data\processed
 The command will create:
 
 - `data/processed/audio/audio.wav`
+- `data/processed/enhanced_audio/*`
 - `data/processed/keyframes/*`
 - `data/processed/transcript/transcript.json`
 - `data/processed/course_package.json`

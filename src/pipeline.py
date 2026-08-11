@@ -6,6 +6,7 @@ from typing import List
 
 from .analysis import build_scenes
 from .asr import transcribe_audio
+from .audio_enhancement import enhance_audio
 from .chapterize import detect_chapters
 from .ingest import extract_audio, extract_keyframes, normalize_video_path
 from .model import CoursePackage
@@ -24,9 +25,11 @@ def build_course_package(
     video_path = normalize_video_path(video_path)
     audio_path = output_dir / "audio" / "audio.wav"
     extract_audio(video_path, audio_path, sample_rate=sample_rate)
+    enhanced_audio_dir = output_dir / "enhanced_audio"
+    enhanced_audio_path = enhance_audio(audio_path, enhanced_audio_dir)
     extract_keyframes(video_path, output_dir / "keyframes", interval_seconds=keyframe_interval_seconds)
 
-    transcript_segments = transcribe_audio(audio_path, output_dir / "transcript")
+    transcript_segments = transcribe_audio(enhanced_audio_path, output_dir / "transcript")
     ocr_results = extract_ocr_from_frames(output_dir / "keyframes", interval_seconds=keyframe_interval_seconds)
     scenes = build_scenes(transcript_segments, ocr_results, interval_seconds=keyframe_interval_seconds)
 
@@ -37,6 +40,7 @@ def build_course_package(
     package = CoursePackage(
         source_video=str(video_path),
         source_audio=str(audio_path),
+        enhanced_audio=str(enhanced_audio_path),
         transcript=str(output_dir / "transcript" / "transcript.json"),
         chapters=chapters,
         scenes=scenes,
