@@ -55,6 +55,7 @@ The pipeline is organized as modular stages:
 8. `assemble`
    - render a baseline course output with captions and narration
    - produce a final rendered video
+   - generate `data/processed/final_course.mp4` for playback
 
 ## Project layout
 
@@ -93,6 +94,7 @@ The command will create:
 
 - `data/processed/audio/audio.wav`
 - `data/processed/enhanced_audio/*`
+- `data/processed/final_course.mp4`
 - `data/processed/keyframes/*`
 - `data/processed/transcript/transcript.json`
 - `data/processed/course_package.json`
