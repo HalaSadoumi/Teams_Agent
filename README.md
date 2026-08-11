@@ -45,11 +45,11 @@ The pipeline is organized as modular stages:
    - convert raw transcript segments into cleaner course narration
    - generate scene-level script placeholders
 
-6. `storyboard`
+7. `storyboard`
    - produce a guided storyboard for course visuals
    - map scenes to chapter IDs and visual directions
 
-7. `assemble`
+8. `assemble`
    - render a baseline course output with captions and narration
    - produce a final rendered video
 
