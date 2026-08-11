@@ -50,6 +50,7 @@ The pipeline is organized as modular stages:
 7. `storyboard`
    - produce a guided storyboard for course visuals
    - map scenes to chapter IDs and visual directions
+   - infer visual type, screen text, and transitions from scene topics and OCR context
 
 8. `assemble`
    - render a baseline course output with captions and narration
