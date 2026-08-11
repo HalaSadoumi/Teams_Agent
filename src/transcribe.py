@@ -2,9 +2,13 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 from faster_whisper import WhisperModel
-from export_subtitles import export_srt
+from .export_subtitles import export_srt
+
+if os.environ.get("HF_HUB_DISABLE_SYMLINKS") is None:
+    os.environ["HF_HUB_DISABLE_SYMLINKS"] = "1"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
