@@ -71,12 +71,13 @@ class CoursePackage:
     source_video: str
     source_audio: str
     transcript: str
+    enhanced_audio: Optional[str] = None
     chapters: List[Chapter] = field(default_factory=list)
     scenes: List[Scene] = field(default_factory=list)
     storyboard: List[TransformedScene] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        data = {
             "source_video": self.source_video,
             "source_audio": self.source_audio,
             "transcript": self.transcript,
@@ -84,6 +85,9 @@ class CoursePackage:
             "scenes": [scene.to_dict() for scene in self.scenes],
             "storyboard": [scene.to_dict() for scene in self.storyboard],
         }
+        if self.enhanced_audio is not None:
+            data["enhanced_audio"] = self.enhanced_audio
+        return data
 
     def save_json(self, destination: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)

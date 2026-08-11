@@ -16,6 +16,22 @@ DEEP_FILTER = PROJECT_ROOT / "tools" / "deep-filter.exe"
 def run(command: list[str]) -> None:
     subprocess.run(command, check=True)
 
+def has_denoiser() -> bool:
+    """Return whether the DeepFilterNet denoiser binary is available."""
+    return DEEP_FILTER.is_file()
+
+
+def enhance_audio(source: Path, output_dir: Path, denoise: bool = True) -> Path:
+    """Standardize and optionally denoise audio for downstream processing."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    standardized = output_dir / f"{source.stem}_48khz_mono.wav"
+    standardize_audio(source, standardized)
+    if denoise and has_denoiser():
+        denoised = output_dir / f"{source.stem}_denoised.wav"
+        denoise_audio(standardized, denoised)
+        return denoised
+    return standardized
+
 def standardize_audio(source: Path = INPUT_AUDIO, destination: Path = STANDARDIZED_AUDIO) -> Path:
     """Create a mono, 48 kHz, 16-bit PCM WAV from source."""
     if not source.is_file():
