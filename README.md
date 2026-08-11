@@ -45,7 +45,7 @@ The pipeline is organized as modular stages:
 
 6. `script`
    - convert raw transcript segments into cleaner course narration
-   - generate scene-level script placeholders
+   - remove filler words and produce a polished narration draft
 
 7. `storyboard`
    - produce a guided storyboard for course visuals
@@ -65,7 +65,7 @@ The pipeline is organized as modular stages:
 - `src/ocr.py`: OCR extraction from keyframes and visual label generation
 - `src/analysis.py`: scene construction from transcripts and OCR references
 - `src/chapterize.py`: chapter detection logic
-- `src/script.py`: script rewriting and scene generation
+- `src/script.py`: script rewriting and scene generation with cleaner narration output
 - `src/storyboard.py`: storyboard generation
 - `src/audio_enhancement.py`: audio normalization and optional denoising helper
 - `src/ocr.py`: OCR extraction from keyframes with pytesseract/easyocr fallback
