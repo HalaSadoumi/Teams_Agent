@@ -1,9 +1,10 @@
 """Analyze multimodal inputs and build structured scenes."""
 
-from typing import Dict, List
 from pathlib import Path
+from typing import Dict, List
 
 from .model import AudioTranscriptSegment, Scene
+from .nlp_utils import extract_keywords, merge_keywords, topic_similarity
 
 
 def _parse_frame_time(frame_path: Path, interval_seconds: int) -> float:
@@ -23,6 +24,41 @@ def _select_frame_for_time(frames: List[Dict[str, object]], reference_time: floa
     return min(frames, key=lambda item: abs(float(item.get("frame_time", 0.0)) - reference_time))
 
 
+def _split_bucket_by_topic(
+    bucket: List[AudioTranscriptSegment],
+    min_scene_duration: float = 60.0,
+    max_scene_duration: float = 300.0,
+    similarity_threshold: float = 0.25,
+) -> List[List[AudioTranscriptSegment]]:
+    if len(bucket) < 3:
+        return [bucket]
+
+    groups: List[List[AudioTranscriptSegment]] = []
+    current_group: List[AudioTranscriptSegment] = [bucket[0]]
+    current_keywords = extract_keywords(bucket[0].text)
+    group_start = bucket[0].start
+
+    for segment in bucket[1:]:
+        segment_keywords = extract_keywords(segment.text)
+        similarity = topic_similarity(current_keywords, segment_keywords)
+        elapsed = segment.end - group_start
+
+        if elapsed >= max_scene_duration or (elapsed >= min_scene_duration and similarity < similarity_threshold):
+            groups.append(current_group)
+            current_group = [segment]
+            current_keywords = segment_keywords
+            group_start = segment.start
+        else:
+            current_group.append(segment)
+            if segment_keywords:
+                current_keywords = merge_keywords(current_keywords, segment_keywords)
+
+    if current_group:
+        groups.append(current_group)
+
+    return groups
+
+
 def build_scenes(
     segments: List[AudioTranscriptSegment],
     ocr_frames: List[Dict[str, object]],
@@ -39,13 +75,16 @@ def build_scenes(
 
     for segment in segments:
         if bucket and segment.start - bucket[-1].end > max_gap_seconds:
-            scenes.append(_scene_from_bucket(scene_index, bucket, ocr_frames, interval_seconds))
-            scene_index += 1
+            for split_bucket in _split_bucket_by_topic(bucket):
+                scenes.append(_scene_from_bucket(scene_index, split_bucket, ocr_frames, interval_seconds))
+                scene_index += 1
             bucket = []
         bucket.append(segment)
 
     if bucket:
-        scenes.append(_scene_from_bucket(scene_index, bucket, ocr_frames, interval_seconds))
+        for split_bucket in _split_bucket_by_topic(bucket):
+            scenes.append(_scene_from_bucket(scene_index, split_bucket, ocr_frames, interval_seconds))
+            scene_index += 1
 
     return scenes
 
@@ -68,6 +107,9 @@ def _scene_from_bucket(
     if not visual_description and ocr_text:
         visual_description = "Slide or screen content captured in the reference frame."
 
+    keywords = extract_keywords(transcript + " " + ocr_text)
+    topic = keywords[0] if keywords else None
+
     return Scene(
         id=f"scene_{index:03d}",
         start=start,
@@ -76,7 +118,7 @@ def _scene_from_bucket(
         speaker=bucket[0].speaker,
         ocr_text=ocr_text,
         visual_description=visual_description,
-        topic=None,
+        topic=topic,
         importance=0.0,
         keyframes=keyframes,
     )
