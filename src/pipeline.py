@@ -6,7 +6,7 @@ from typing import List
 
 from .analysis import build_scenes
 from .asr import transcribe_audio
-from .audio_enhancement import enhance_audio
+from .audio_enhancement import enhance_audio, generate_asr_version
 from .assemble import assemble_course
 from .chapterize import detect_chapters
 from .ingest import extract_audio, extract_keyframes, normalize_video_path
@@ -30,7 +30,11 @@ def build_course_package(
     enhanced_audio_path = enhance_audio(audio_path, enhanced_audio_dir)
     extract_keyframes(video_path, output_dir / "keyframes", interval_seconds=keyframe_interval_seconds)
 
-    transcript_segments = transcribe_audio(enhanced_audio_path, output_dir / "transcript")
+    # Produce an ASR-optimized version (mono, 16 kHz, loudness-normalized)
+    asr_audio_dir = output_dir / "asr_audio"
+    asr_audio_path = generate_asr_version(enhanced_audio_path, asr_audio_dir)
+
+    transcript_segments = transcribe_audio(asr_audio_path, output_dir / "transcript")
     ocr_results = extract_ocr_from_frames(output_dir / "keyframes", interval_seconds=keyframe_interval_seconds)
     scenes = build_scenes(transcript_segments, ocr_results, interval_seconds=keyframe_interval_seconds)
 
@@ -43,6 +47,7 @@ def build_course_package(
         source_video=str(video_path),
         source_audio=str(audio_path),
         enhanced_audio=str(enhanced_audio_path),
+        audio_asr=str(asr_audio_path),
         assembled_video=str(output_video_path),
         transcript=str(output_dir / "transcript" / "transcript.json"),
         chapters=chapters,
