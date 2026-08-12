@@ -1,111 +1,130 @@
 # AI-Powered Training Transformation
 
-This repository is a scaffold for an internship project to transform raw training recordings into structured, e-learning course assets.
+Transform raw training recordings into structured e-learning course assets while preserving the original speaker voice.
 
 ## Goal
 
-The system should take a raw video recording and produce:
+The system takes a raw training video and produces:
 
-- timestamped transcript
-- OCR and visual references
+- cleaned, enhanced original audio (same speaker voice)
+- timestamped transcript with OCR-assisted corrections
+- corrected subtitles (SRT)
 - semantic chapter boundaries
-- educational script drafts
+- chapter narration scripts
 - storyboard metadata
-- an assembled course package with chapter metadata
+- an assembled course video with corrected captions
 
 ## Architecture
 
-The pipeline is organized as modular stages:
-
-1. `ingest`
-   - extract audio from the source video
-   - create reference keyframes
-
-2. `audio_enhancement`
-   - standardize audio to 48 kHz mono WAV
-   - optionally denoise if DeepFilterNet is available
-
-3. `asr`
-   - transcribe audio into timestamped segments
-   - preserve speaker and timing information
-
-3. `ocr`
-   - extract text from periodic reference frames
-   - label slide/screen content for multimodal analysis
-
-4. `analysis`
-   - merge transcript segments and visual references into structured scenes
-   - split long continuous recordings into semantically coherent scenes
-   - attach OCR, visual labels, and scene metadata
-
-5. `chapterize`
-   - detect chapter boundaries from scene structure
-   - create chapter titles, summaries, and key points
-   - use semantic topic segmentation to split long continuous recordings into meaningful course chapters
-
-6. `script`
-   - convert raw transcript segments into cleaner course narration
-   - remove filler words and produce a polished narration draft
-
-7. `storyboard`
-   - produce a guided storyboard for course visuals
-   - map scenes to chapter IDs and visual directions
-   - infer visual type, screen text, and transitions from scene topics and OCR context
-
-8. `assemble`
-   - render a baseline course output with captions and narration
-   - produce a final rendered video
-   - generate `data/processed/final_course.mp4` for playback
+1. **ingest** — extract audio and reference keyframes
+2. **audio_enhancement** — clean and normalize the original voice (48 kHz production master + 16 kHz ASR version)
+3. **ocr** — extract slide/screen text from keyframes to improve transcription accuracy
+4. **asr** — transcribe with faster-whisper (medium model by default)
+5. **transcript_correction** — fix ASR errors using OCR vocabulary
+6. **analysis** — build multimodal scenes from transcript + OCR
+7. **chapterize** — detect semantic chapter boundaries
+8. **script** — clean narration text and export per-chapter scripts
+9. **storyboard** — generate visual direction metadata
+10. **assemble** — render final video with enhanced audio and corrected subtitles
 
 ## Project layout
 
-- `src/`: pipeline modules and entrypoint
-- `src/model.py`: shared data structures
-- `src/pipeline.py`: orchestrator for the MVP workflow
-- `src/ingest.py`: audio/video asset extraction
-- `src/asr.py`: speech transcription wrapper
-- `src/ocr.py`: OCR extraction from keyframes and visual label generation
-- `src/analysis.py`: scene construction from transcripts and OCR references
-- `src/chapterize.py`: chapter detection logic
-- `src/script.py`: script rewriting and scene generation with cleaner narration output
-- `src/storyboard.py`: storyboard generation
-- `src/audio_enhancement.py`: audio normalization and optional denoising helper
-- `src/ocr.py`: OCR extraction from keyframes with pytesseract/easyocr fallback
-- `src/assemble.py`: baseline rendering support
-- `src/transcribe.py`: existing local transcription script
-- `src/render_video.py`: existing caption rendering helper
-- `src/extract_keyframes.py`: existing keyframe extraction helper
-- `src/create_storyboard.py`: existing storyboard markdown helper
+```
+src/
+  pipeline.py              # Main CLI entrypoint
+  ingest.py                # Audio/video extraction
+  audio_enhancement.py     # Audio cleaning (preserves original voice)
+  transcribe.py            # faster-whisper transcription
+  transcript_correction.py # OCR-assisted ASR correction
+  asr.py                   # ASR wrapper
+  ocr.py                   # Slide/screen OCR
+  analysis.py              # Scene building
+  chapterize.py            # Chapter detection
+  script.py                # Narration cleanup + chapter script export
+  storyboard.py            # Storyboard generation
+  assemble.py              # Video assembly
+  render_video.py          # FFmpeg rendering
+  model.py                 # Shared data structures
+data/
+  input/                   # Place source videos here (gitignored)
+  processed/               # Pipeline outputs (gitignored)
+docs/                      # Progress reports
+tools/                     # Optional DeepFilterNet binary
+```
 
 ## Usage
 
-Run the pipeline from the repository root:
+Install dependencies:
 
 ```powershell
-python src\pipeline.py path\to\training_video.mp4 --output-dir data\processed
+pip install -r requirements.txt
 ```
 
-Optional OCR dependencies:
-- Install `Pillow` and `pytesseract` for local OCR support.
-- If using `pytesseract`, install the Tesseract binary on Windows and make sure it is available on PATH.
-- `easyocr` can also be installed as an optional fallback for text extraction without external OCR binaries.
+Optional: install [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) and add it to PATH for better slide text extraction and transcript correction.
 
-The command will create:
+Run the pipeline:
 
-- `data/processed/audio/audio.wav`
-- `data/processed/enhanced_audio/*`
-- `data/processed/final_course.mp4`
-- `data/processed/keyframes/*`
-- `data/processed/transcript/transcript.json`
-- `data/processed/course_package.json`
-- `data/processed/storyboard.json`
+```powershell
+python -m src.pipeline data\input\training.mp4 --output-dir data\processed
+```
+
+Useful options:
+
+```powershell
+python -m src.pipeline data\input\training.mp4 `
+  --output-dir data\processed `
+  --model medium `
+  --language fr `
+  --chapter-duration 300 `
+  --keyframe-interval 20
+```
+
+Skip denoising if the source audio is already clean:
+
+```powershell
+python -m src.pipeline data\input\training.mp4 --no-denoise
+```
+
+## Outputs
+
+All artifacts are written under `--output-dir` (default: `data/processed/`):
+
+| File | Description |
+|------|-------------|
+| `audio/audio.wav` | Raw extracted audio |
+| `enhanced_audio/*_production.wav` | Cleaned 48 kHz master (original voice) |
+| `asr_audio/*_16khz_mono.wav` | ASR-optimized audio |
+| `transcript/transcript.json` | Raw Whisper transcript |
+| `transcript/transcript_corrected.json` | OCR-corrected transcript |
+| `transcript/captions_corrected.srt` | Corrected subtitles |
+| `scripts/chapter_XX_narration.txt` | Clean narration per chapter |
+| `storyboard.json` | Visual direction metadata |
+| `course_package.json` | Full course metadata |
+| `final_course.mp4` | Assembled video with enhanced audio + corrected subtitles |
+
+## Audio philosophy
+
+The pipeline **does not replace the speaker's voice**. It:
+
+- removes background noise conservatively
+- normalizes loudness for consistent playback
+- keeps the original speaker character intact
+- uses the enhanced audio in the final video
+
+For best results, optionally place `deep-filter.exe` in `tools/` for DeepFilterNet denoising.
+
+## Transcription accuracy
+
+Accuracy is improved by:
+
+- using the **medium** Whisper model (upgrade to `large-v3` with `--model large-v3` for best quality)
+- building a Whisper **initial prompt** from OCR slide vocabulary
+- **OCR-assisted post-correction** of technical terms visible on slides
+- forcing language with `--language fr` or `--language en` when known
 
 ## Next steps
 
-The current code focuses on architecture and pipeline scaffolding. The chapter pipeline now uses semantic topic similarity to improve chapter boundaries for long continuous recordings. Future work includes:
-
-- adding language-aware speaker diarization
-- strengthening OCR and visual analysis for slides and screens
-- adding LLM-based script rewriting
-- generating polished storyboard visuals
-- assembling a finished video course
+- LLM-based script rewriting for polished educational narration
+- Speaker diarization
+- Visual scene rendering (motion graphics, diagrams)
+- Chapter-based video navigation UI

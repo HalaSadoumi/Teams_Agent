@@ -1,13 +1,17 @@
 """Extract text and visual labels from reference frames."""
 
-from pathlib import Path
+from __future__ import annotations
+
 import re
+from pathlib import Path
 from typing import Dict, List, Optional
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageEnhance, ImageOps
 except ImportError:
     Image = None  # type: ignore
+    ImageEnhance = None  # type: ignore
+    ImageOps = None  # type: ignore
 
 try:
     import pytesseract
@@ -57,18 +61,28 @@ def _load_easyocr_reader() -> Optional[object]:
     return _easyocr_reader
 
 
+def _preprocess_image(image: "Image.Image") -> "Image.Image":
+    gray = image.convert("L")
+    if ImageOps is not None:
+        gray = ImageOps.autocontrast(gray)
+    if ImageEnhance is not None:
+        gray = ImageEnhance.Sharpness(gray).enhance(1.5)
+    return gray
+
+
 def _extract_ocr_text(frame_path: Path) -> str:
     if Image is None:
         return ""
 
     try:
         image = Image.open(frame_path)
+        processed = _preprocess_image(image)
     except Exception:
         return ""
 
     if _tesseract_available():
         try:
-            return pytesseract.image_to_string(image, lang="eng+fra").strip()
+            return pytesseract.image_to_string(processed, lang="fra+eng").strip()
         except Exception:
             pass
 
@@ -93,9 +107,7 @@ def extract_ocr_from_frames(frame_dir: Path, interval_seconds: int = 20) -> List
     for frame in sorted(frame_dir.glob("*.jpg")):
         frame_time = _parse_frame_time(frame, interval_seconds)
         ocr_text = _extract_ocr_text(frame)
-        visual_label = "reference_frame"
-        if ocr_text:
-            visual_label = "slide_or_screen_text"
+        visual_label = "slide_or_screen_text" if ocr_text else "reference_frame"
 
         results.append(
             {
