@@ -45,15 +45,17 @@ The pipeline is organized as modular stages:
 
 6. `script`
    - convert raw transcript segments into cleaner course narration
-   - generate scene-level script placeholders
+   - remove filler words and produce a polished narration draft
 
 7. `storyboard`
    - produce a guided storyboard for course visuals
    - map scenes to chapter IDs and visual directions
+   - infer visual type, screen text, and transitions from scene topics and OCR context
 
 8. `assemble`
    - render a baseline course output with captions and narration
    - produce a final rendered video
+   - generate `data/processed/final_course.mp4` for playback
 
 ## Project layout
 
@@ -65,15 +67,15 @@ The pipeline is organized as modular stages:
 - `src/ocr.py`: OCR extraction from keyframes and visual label generation
 - `src/analysis.py`: scene construction from transcripts and OCR references
 - `src/chapterize.py`: chapter detection logic
-- `src/script.py`: script rewriting and scene generation
+- `src/script.py`: script rewriting and scene generation with cleaner narration output
 - `src/storyboard.py`: storyboard generation
 - `src/audio_enhancement.py`: audio normalization and optional denoising helper
+- `src/ocr.py`: OCR extraction from keyframes with pytesseract/easyocr fallback
 - `src/assemble.py`: baseline rendering support
 - `src/transcribe.py`: existing local transcription script
 - `src/render_video.py`: existing caption rendering helper
 - `src/extract_keyframes.py`: existing keyframe extraction helper
 - `src/create_storyboard.py`: existing storyboard markdown helper
-- `src/audio_enhancement.py`: existing audio normalization and denoising helper
 
 ## Usage
 
@@ -83,10 +85,16 @@ Run the pipeline from the repository root:
 python src\pipeline.py path\to\training_video.mp4 --output-dir data\processed
 ```
 
+Optional OCR dependencies:
+- Install `Pillow` and `pytesseract` for local OCR support.
+- If using `pytesseract`, install the Tesseract binary on Windows and make sure it is available on PATH.
+- `easyocr` can also be installed as an optional fallback for text extraction without external OCR binaries.
+
 The command will create:
 
 - `data/processed/audio/audio.wav`
 - `data/processed/enhanced_audio/*`
+- `data/processed/final_course.mp4`
 - `data/processed/keyframes/*`
 - `data/processed/transcript/transcript.json`
 - `data/processed/course_package.json`

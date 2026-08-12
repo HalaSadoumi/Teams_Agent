@@ -2,14 +2,24 @@
 
 from pathlib import Path
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 try:
     from PIL import Image
-    import pytesseract
 except ImportError:
     Image = None  # type: ignore
+
+try:
+    import pytesseract
+except ImportError:
     pytesseract = None  # type: ignore
+
+try:
+    import easyocr
+except ImportError:
+    easyocr = None  # type: ignore
+
+_easyocr_reader = None
 
 
 def _parse_frame_time(frame_path: Path, interval_seconds: int) -> float:
@@ -23,14 +33,55 @@ def _parse_frame_time(frame_path: Path, interval_seconds: int) -> float:
         return 0.0
 
 
+def _tesseract_available() -> bool:
+    if pytesseract is None:
+        return False
+    try:
+        pytesseract.get_tesseract_version()
+        return True
+    except Exception:
+        return False
+
+
+def _easyocr_available() -> bool:
+    return easyocr is not None
+
+
+def _load_easyocr_reader() -> Optional[object]:
+    global _easyocr_reader
+    if _easyocr_reader is None and easyocr is not None:
+        try:
+            _easyocr_reader = easyocr.Reader(["fr", "en"], gpu=False)
+        except Exception:
+            _easyocr_reader = None
+    return _easyocr_reader
+
+
 def _extract_ocr_text(frame_path: Path) -> str:
-    if Image is None or pytesseract is None:
+    if Image is None:
         return ""
+
     try:
         image = Image.open(frame_path)
-        return pytesseract.image_to_string(image, lang="eng+fra").strip()
     except Exception:
         return ""
+
+    if _tesseract_available():
+        try:
+            return pytesseract.image_to_string(image, lang="eng+fra").strip()
+        except Exception:
+            pass
+
+    if _easyocr_available():
+        reader = _load_easyocr_reader()
+        if reader is not None:
+            try:
+                results = reader.readtext(str(frame_path), detail=0, paragraph=True)
+                return "\n".join(results).strip()
+            except Exception:
+                pass
+
+    return ""
 
 
 def extract_ocr_from_frames(frame_dir: Path, interval_seconds: int = 20) -> List[Dict[str, object]]:

@@ -72,6 +72,8 @@ class CoursePackage:
     source_audio: str
     transcript: str
     enhanced_audio: Optional[str] = None
+    audio_asr: Optional[str] = None
+    assembled_video: Optional[str] = None
     chapters: List[Chapter] = field(default_factory=list)
     scenes: List[Scene] = field(default_factory=list)
     storyboard: List[TransformedScene] = field(default_factory=list)
@@ -87,6 +89,10 @@ class CoursePackage:
         }
         if self.enhanced_audio is not None:
             data["enhanced_audio"] = self.enhanced_audio
+        if self.audio_asr is not None:
+            data["audio_asr"] = self.audio_asr
+        if self.assembled_video is not None:
+            data["assembled_video"] = self.assembled_video
         return data
 
     def save_json(self, destination: Path) -> None:

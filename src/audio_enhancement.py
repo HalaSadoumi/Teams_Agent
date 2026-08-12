@@ -22,15 +22,84 @@ def has_denoiser() -> bool:
 
 
 def enhance_audio(source: Path, output_dir: Path, denoise: bool = True) -> Path:
-    """Standardize and optionally denoise audio for downstream processing."""
+    """Standardize and optionally denoise audio for downstream processing.
+
+    Produces a 48 kHz mono WAV 'master' file suitable for final production. Does
+    not overwrite the original. Returns the path to the 48 kHz master (denoised
+    if denoise=True and a denoiser is available).
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     standardized = output_dir / f"{source.stem}_48khz_mono.wav"
     standardize_audio(source, standardized)
+
+    # If a high-quality denoiser binary is available, run it and return that.
     if denoise and has_denoiser():
         denoised = output_dir / f"{source.stem}_denoised.wav"
         denoise_audio(standardized, denoised)
         return denoised
+
+    # If no external denoiser is available but denoise requested, apply a
+    # conservative ffmpeg denoise chain as a fallback (keeps master at 48 kHz).
+    if denoise and not has_denoiser():
+        fallback = output_dir / f"{source.stem}_48khz_denoised.wav"
+        ffmpeg_denoise_audio(standardized, fallback)
+        return fallback
+
+    # Default: return the standardized 48 kHz master
     return standardized
+
+
+def ffmpeg_denoise_audio(source: Path, destination: Path) -> Path:
+    """Conservative denoising using an ffmpeg filter chain (fallback).
+
+    This is intentionally conservative to avoid over-processing speech which
+    can hurt ASR. It is used only when no specialized denoiser binary exists.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        imageio_ffmpeg.get_ffmpeg_exe(),
+        "-y",
+        "-i",
+        str(source),
+        "-af",
+        "highpass=f=120, lowpass=f=12000, afftdn=nf=-25, dynaudnorm=p=0.95",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-c:a",
+        "pcm_s16le",
+        str(destination),
+    ]
+    run(cmd)
+    return destination
+
+
+def generate_asr_version(source_48k: Path, dest_dir: Path) -> Path:
+    """Create a 16 kHz mono WAV optimized for ASR from a 48 kHz master.
+
+    Applies loudness normalization (loudnorm) and resamples to 16 kHz mono.
+    Returns the path to the ASR-ready WAV file.
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    asr_path = dest_dir / f"{source_48k.stem}_16khz_mono.wav"
+    # Use ffmpeg to resample and apply loudness normalization suitable for ASR
+    run([
+        imageio_ffmpeg.get_ffmpeg_exe(),
+        "-y",
+        "-i",
+        str(source_48k),
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-af",
+        "loudnorm=I=-16:TP=-1.5:LRA=11",
+        "-c:a",
+        "pcm_s16le",
+        str(asr_path),
+    ])
+    return asr_path
 
 def standardize_audio(source: Path = INPUT_AUDIO, destination: Path = STANDARDIZED_AUDIO) -> Path:
     """Create a mono, 48 kHz, 16-bit PCM WAV from source."""
