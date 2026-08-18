@@ -1,0 +1,5 @@
+# Optional, heavier extra: speaker diarization.
+# Requires a free Hugging Face account + accepting the pyannote/speaker-diarization-3.1
+# model terms, plus an HF_TOKEN in .env. Without this installed/configured, the
+# pipeline falls back to a single-speaker label (see src/s2m_pipeline/diarization.py).
+pyannote.audio>=3.1.0
