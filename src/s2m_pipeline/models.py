@@ -43,6 +43,9 @@ class StoryboardScene(BaseModel):
     visual_description: str
     on_screen_text: str = ""
     transition: str = "fade"
+    # Populated by narration.py once the narration audio is synthesized;
+    # `duration` is then corrected to match this file's real length.
+    audio_path: str | None = None
 
 
 class TranscriptSegment(BaseModel):

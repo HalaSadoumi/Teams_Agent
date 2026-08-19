@@ -9,3 +9,4 @@ tqdm>=4.66.0
 google-genai>=1.0.0
 tenacity>=8.2.0
 sentence-transformers>=3.0.0
+edge-tts>=6.1.0

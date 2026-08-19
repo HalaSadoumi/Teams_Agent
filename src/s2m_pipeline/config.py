@@ -27,6 +27,9 @@ class Settings:
     # gemini-flash-lite-latest has a separate, more generous free quota.
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
 
+    # edge-tts voice for narration (Sprint 3). Free, no API key required.
+    tts_voice: str = os.getenv("TTS_VOICE", "fr-FR-DeniseNeural")
+
     # Visual scene detection sensitivity (PySceneDetect ContentDetector threshold).
     # Lower = more sensitive (more scenes detected).
     scene_detect_threshold: float = 27.0

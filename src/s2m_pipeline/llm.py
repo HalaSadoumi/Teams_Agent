@@ -54,6 +54,34 @@ class ChapterContent(BaseModel):
     key_points: list[str]
 
 
+class ScriptOutput(BaseModel):
+    script: str
+
+
+VISUAL_TYPES = [
+    "title_card",
+    "bullet_list",
+    "icon_row",
+    "process_flow",
+    "comparison",
+    "stat_highlight",
+    "quote",
+    "timeline",
+]
+
+
+class StoryboardSceneLLM(BaseModel):
+    narration: str
+    visual_type: str
+    visual_description: str
+    on_screen_text: str
+    transition: str
+
+
+class StoryboardLLMOutput(BaseModel):
+    scenes: list[StoryboardSceneLLM]
+
+
 _CHAPTER_PROMPT = """Tu es un ingenieur pedagogique qui prepare un cours e-learning \
 a partir d'un enregistrement de formation interne d'entreprise.
 
@@ -105,3 +133,96 @@ def generate_chapter_content(
         ),
     )
     return ChapterContent.model_validate_json(response.text)
+
+
+_SCRIPT_PROMPT = """Tu es un redacteur pedagogique qui transforme la transcription brute \
+d'un chapitre de formation en un script de narration pour un cours e-learning.
+
+Le script doit :
+- preserver fidelement le sens et les faits de la transcription originale (aucune invention)
+- supprimer les elements conversationnels superflus (hesitations, repetitions, "euh", \
+"donc voila", apartes hors-sujet, interruptions techniques)
+- ameliorer la clarte et la fluidite : une vraie narration de cours, pas une copie du transcript
+- conserver la terminologie technique exacte
+- relier les idees de maniere naturelle, comme un texte continu destine a etre lu a voix haute
+- NE PAS resumer agressivement : l'objectif est de transformer, pas de condenser. Le script \
+doit couvrir tous les points substantiels de la transcription (voir le principe fondamental \
+du projet : ce n'est pas un resume video).
+
+Utilise systematiquement les accents et diacritiques francais corrects (é, è, à, ç, etc.).
+Reponds uniquement avec le script final, en francais, sans titre ni note.
+
+--- TRANSCRIPTION BRUTE DU CHAPITRE ---
+{transcript}
+
+--- TEXTE OCR DES DIAPOSITIVES / ECRAN (contexte additionnel) ---
+{ocr_text}
+"""
+
+
+def generate_script(transcript: str, ocr_text: str) -> str:
+    client = _get_client()
+    prompt = _SCRIPT_PROMPT.format(
+        transcript=transcript or "(aucune parole detectee)",
+        ocr_text=ocr_text or "(aucun texte detecte a l'ecran)",
+    )
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=ScriptOutput,
+        ),
+    )
+    return ScriptOutput.model_validate_json(response.text).script
+
+
+_STORYBOARD_PROMPT = """Tu es un realisateur de motion design qui transforme un script de \
+narration en storyboard pour une video de cours e-learning : motion graphics (texte anime, \
+icones, diagrammes), PAS de diapositives brutes ni de capture de reunion (cahier des \
+charges, section 6.1).
+
+Decoupe le script ci-dessous en une sequence de scenes visuelles courtes (environ 10 a 25 \
+secondes de narration chacune, decoupees a des frontieres de phrases naturelles). Pour \
+chaque scene, fournis :
+- "narration" : l'extrait EXACT et complet du script correspondant a cette scene. Mises bout \
+a bout dans l'ordre, les narrations de toutes les scenes doivent reconstituer exactement le \
+script original, sans rien omettre ni modifier.
+- "visual_type" : un type choisi EXACTEMENT parmi cette liste : {visual_types}
+- "visual_description" : description concrete de l'animation (ce qui apparait, bouge, \
+s'enchaine a l'ecran)
+- "on_screen_text" : texte court affiche a l'ecran (mots-cles, chiffres, titre) ; chaine vide \
+si non pertinent
+- "transition" : "fade", "cut", ou "slide"
+
+Chaque visuel doit avoir une fonction explicative claire, jamais purement decorative.
+Utilise systematiquement les accents et diacritiques francais corrects (é, è, à, ç, etc.).
+Reponds en francais.
+
+--- SCRIPT ---
+{script}
+
+--- TEXTE OCR DES DIAPOSITIVES / ECRAN (contexte additionnel, pour t'inspirer des schemas / \
+donnees presentes) ---
+{ocr_text}
+"""
+
+
+def generate_storyboard_scenes(script: str, ocr_text: str) -> list[StoryboardSceneLLM]:
+    client = _get_client()
+    prompt = _STORYBOARD_PROMPT.format(
+        script=script,
+        ocr_text=ocr_text or "(aucun texte detecte a l'ecran)",
+        visual_types=", ".join(VISUAL_TYPES),
+    )
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=StoryboardLLMOutput,
+        ),
+    )
+    return StoryboardLLMOutput.model_validate_json(response.text).scenes
