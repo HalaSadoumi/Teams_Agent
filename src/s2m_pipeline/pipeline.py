@@ -11,12 +11,19 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from tqdm import tqdm
 
-from . import audio, diarization, ocr, scenes, transcription
+from . import audio, diarization, ocr, scenes, subtitles, transcription
 from .models import Scene, TranscriptSegment
+
+
+@dataclass
+class PipelineResult:
+    scenes: list[Scene]
+    transcript_segments: list[TranscriptSegment]
 
 
 def _overlapping_transcript(
@@ -34,7 +41,7 @@ def _majority_speaker(segments: list[TranscriptSegment]) -> str | None:
     return max(set(labelled), key=labelled.count)
 
 
-def run(video_path: Path, work_dir: Path) -> list[Scene]:
+def run(video_path: Path, work_dir: Path) -> PipelineResult:
     frames_dir = work_dir / "frames"
     audio_path = work_dir / "audio.wav"
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -86,7 +93,7 @@ def run(video_path: Path, work_dir: Path) -> list[Scene]:
             )
         )
 
-    return result
+    return PipelineResult(scenes=result, transcript_segments=transcript_segments)
 
 
 def main() -> None:
@@ -105,13 +112,27 @@ def main() -> None:
     args = parser.parse_args()
 
     work_dir = args.work_dir or (args.output.parent / args.video.stem)
-    scenes_result = run(args.video, work_dir)
+    result = run(args.video, work_dir)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, "w", encoding="utf-8") as f:
-        json.dump([s.model_dump() for s in scenes_result], f, ensure_ascii=False, indent=2)
+        json.dump([s.model_dump() for s in result.scenes], f, ensure_ascii=False, indent=2)
 
-    print(f"\nDone. {len(scenes_result)} scenes written to {args.output}")
+    transcript_path = work_dir / "transcript.json"
+    with open(transcript_path, "w", encoding="utf-8") as f:
+        json.dump(
+            [s.model_dump() for s in result.transcript_segments],
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    srt_path = subtitles.write_srt(result.transcript_segments, work_dir / "subtitles.srt")
+    vtt_path = subtitles.write_vtt(result.transcript_segments, work_dir / "subtitles.vtt")
+
+    print(f"\nDone. {len(result.scenes)} scenes written to {args.output}")
+    print(f"      {len(result.transcript_segments)} transcript segments written to {transcript_path}")
+    print(f"      Subtitles written to {srt_path} and {vtt_path}")
 
 
 if __name__ == "__main__":
