@@ -9,6 +9,10 @@ Stage 4ème année AI & Data Science (EMSI Casablanca) — S2M Casablanca.
 Nouveau sur le projet ? Voir [docs/GUIDE_PROJET.md](docs/GUIDE_PROJET.md) — explication
 complète et accessible du projet, du problème de départ jusqu'à ce qu'il reste à faire.
 
+Profil technique ? Voir [docs/ARCHITECTURE_TECHNIQUE.md](docs/ARCHITECTURE_TECHNIQUE.md) —
+documentation module par module (architecture, schémas de données, décisions
+d'implémentation), avec un état d'avancement honnête par composant.
+
 ## État actuel : Sprint 2 (Semaines 3-4)
 
 **Sprint 1** (ingestion) : pipeline fonctionnel — extraction audio,
