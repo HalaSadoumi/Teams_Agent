@@ -226,3 +226,120 @@ def generate_storyboard_scenes(script: str, ocr_text: str) -> list[StoryboardSce
         ),
     )
     return StoryboardLLMOutput.model_validate_json(response.text).scenes
+
+
+class SegmentDecision(BaseModel):
+    index: int
+    decision: str  # "garder" | "couper"
+
+
+class SegmentClassification(BaseModel):
+    decisions: list[SegmentDecision]
+
+
+_CLASSIFY_PROMPT = """Tu es un monteur audio qui prepare la narration originale (voix reelle \
+de l'intervenant, pas de synthese vocale) d'un cours e-learning a partir d'un enregistrement \
+de formation.
+
+Pour CHAQUE segment de transcription numerote ci-dessous, decide s'il faut :
+- "garder" : contenu a preserver (explications, definitions, exemples, procedures, faits \
+techniques, demonstrations, conclusions) ou contenu a traiter avec discernement mais qui \
+apporte une valeur reelle (questions pertinentes, echanges utiles) ;
+- "couper" : contenu a nettoyer (hesitations, "euh", repetitions accidentelles, silences, \
+apartes hors-sujet, interruptions techniques, redondances pures d'un meme point deja fait).
+
+L'objectif n'est PAS une compression agressive : dans le doute, garde le segment. Le resultat \
+sera assemble tel quel (audio reel decoupe et recolle), donc chaque segment "garde" doit rester \
+comprehensible seul, sans dependre d'un segment coupe juste avant.
+
+Reponds pour CHAQUE segment ci-dessous, avec le meme index, sans en omettre aucun.
+
+--- SEGMENTS ---
+{segments_text}
+"""
+
+
+def classify_segments(indexed_texts: list[tuple[int, str]]) -> dict[int, str]:
+    """Returns {segment_index: "garder" | "couper"}."""
+    client = _get_client()
+    segments_text = "\n".join(f"[{i}] {text}" for i, text in indexed_texts)
+    prompt = _CLASSIFY_PROMPT.format(segments_text=segments_text)
+
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=SegmentClassification,
+        ),
+    )
+    parsed = SegmentClassification.model_validate_json(response.text)
+    return {d.index: d.decision for d in parsed.decisions}
+
+
+class VisualPlanLLM(BaseModel):
+    index: int
+    visual_type: str
+    visual_description: str
+    on_screen_text: str
+    transition: str
+
+
+class VisualPlanOutput(BaseModel):
+    plans: list[VisualPlanLLM]
+
+
+_VISUAL_PLAN_PROMPT = """Tu es un realisateur de motion design qui habille visuellement la \
+narration originale (voix reelle de l'intervenant, deja decoupee en scenes) d'un cours \
+e-learning : motion graphics (texte anime, icones, diagrammes), PAS de diapositives brutes ni \
+de capture de reunion (cahier des charges, section 6.1).
+
+Pour CHAQUE scene de narration numerotee ci-dessous, propose le visuel qui l'accompagne. \
+Reponds pour CHAQUE scene, avec le meme index, sans en omettre aucune :
+- "index" : le meme numero que le segment d'entree correspondant
+- "visual_type" : un type choisi EXACTEMENT parmi cette liste : {visual_types}
+- "visual_description" : description concrete de l'animation (ce qui apparait, bouge, \
+s'enchaine a l'ecran)
+- "on_screen_text" : texte court affiche a l'ecran (mots-cles, chiffres, titre) ; chaine vide \
+si non pertinent
+- "transition" : "fade", "cut", ou "slide"
+
+Chaque visuel doit avoir une fonction explicative claire, jamais purement decorative.
+Utilise systematiquement les accents et diacritiques francais corrects (é, è, à, ç, etc.).
+Reponds en francais.
+
+--- SCENES DE NARRATION (texte reel, deja fixe - ne le modifie pas) ---
+{scenes_text}
+
+--- TEXTE OCR DES DIAPOSITIVES / ECRAN (contexte additionnel) ---
+{ocr_text}
+"""
+
+
+def generate_visual_plan(
+    indexed_narrations: list[tuple[int, str]], ocr_text: str
+) -> dict[int, VisualPlanLLM]:
+    client = _get_client()
+    scenes_text = "\n".join(f"[{i}] {text}" for i, text in indexed_narrations)
+    prompt = _VISUAL_PLAN_PROMPT.format(
+        scenes_text=scenes_text,
+        ocr_text=ocr_text or "(aucun texte detecte a l'ecran)",
+        visual_types=", ".join(VISUAL_TYPES),
+    )
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=VisualPlanOutput,
+        ),
+    )
+    parsed = VisualPlanOutput.model_validate_json(response.text)
+    by_index = {plan.index: plan for plan in parsed.plans}
+
+    default_plan = VisualPlanLLM(
+        index=-1, visual_type="bullet_list", visual_description="", on_screen_text="", transition="fade"
+    )
+    return {idx: by_index.get(idx, default_plan) for idx, _ in indexed_narrations}
