@@ -1,10 +1,15 @@
 """Sprint 1 orchestrator: video in -> list[Scene] (multimodal representation) out.
 
 Pipeline (cahier des charges, section 7 / figure 1 - ingestion half):
-  video -> audio extraction -> ASR transcription
-        -> visual scene detection -> representative frame per scene -> OCR
+  video -> audio extraction -> audio enhancement (denoise + loudness norm)
+        -> ASR transcription -> visual scene detection
+        -> representative frame per scene -> OCR
   -> merge into Scene objects, keyed on visual scene boundaries, each carrying
      the transcript text and speaker(s) that overlap that time window.
+
+The enhanced master audio (audio.wav) is also the source for the
+original-voice narration clips built downstream (section 6.2, option 1) —
+trimmed straight from this file rather than synthesized.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from .models import Scene, TranscriptSegment
 class PipelineResult:
     scenes: list[Scene]
     transcript_segments: list[TranscriptSegment]
+    audio_path: Path
 
 
 def _overlapping_transcript(
@@ -43,17 +49,21 @@ def _majority_speaker(segments: list[TranscriptSegment]) -> str | None:
 
 def run(video_path: Path, work_dir: Path) -> PipelineResult:
     frames_dir = work_dir / "frames"
+    raw_audio_path = work_dir / "audio_raw.wav"
     audio_path = work_dir / "audio.wav"
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"[1/5] Extracting audio from {video_path.name} ...")
-    audio.extract_audio(video_path, audio_path)
+    print(f"[1/6] Extracting audio from {video_path.name} ...")
+    audio.extract_audio(video_path, raw_audio_path)
 
-    print("[2/5] Transcribing audio (faster-whisper, CPU) ...")
+    print("[2/6] Enhancing audio (denoise + loudness normalization) ...")
+    audio.enhance_audio(raw_audio_path, audio_path)
+
+    print("[3/6] Transcribing audio (faster-whisper, CPU) ...")
     transcript_segments = transcription.transcribe(audio_path)
     print(f"      -> {len(transcript_segments)} transcript segments")
 
-    print("[3/5] Diarizing speakers ...")
+    print("[4/6] Diarizing speakers ...")
     speaker_turns = diarization.diarize(audio_path)
     if speaker_turns:
         for seg in transcript_segments:
@@ -63,11 +73,11 @@ def run(video_path: Path, work_dir: Path) -> PipelineResult:
     else:
         print("      -> no diarization available, using single-speaker fallback")
 
-    print("[4/5] Detecting visual scene boundaries ...")
+    print("[5/6] Detecting visual scene boundaries ...")
     visual_scenes = scenes.detect_scenes(video_path)
     print(f"      -> {len(visual_scenes)} visual scenes")
 
-    print("[5/5] Extracting representative frames + running OCR ...")
+    print("[6/6] Extracting representative frames + running OCR ...")
     result: list[Scene] = []
     for i, vscene in enumerate(tqdm(visual_scenes)):
         scene_id = f"scene_{i:03d}"
@@ -93,7 +103,7 @@ def run(video_path: Path, work_dir: Path) -> PipelineResult:
             )
         )
 
-    return PipelineResult(scenes=result, transcript_segments=transcript_segments)
+    return PipelineResult(scenes=result, transcript_segments=transcript_segments, audio_path=audio_path)
 
 
 def main() -> None:
