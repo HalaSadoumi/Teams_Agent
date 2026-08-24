@@ -239,10 +239,11 @@ de sélection (garder/couper) et de découpage audio réel.
 
 ## 7. Ce qu'il reste à faire, dans l'ordre
 
-1. **Terminer le storyboard sur l'ensemble des 17 chapitres** de la vidéo complète (déjà
-   validé sur un chapitre test).
+1. ~~Terminer le storyboard sur l'ensemble des 17 chapitres~~ — fait : 261 scènes de
+   narration/storyboard générées sur la vidéo complète (voir `output/full_storyboard.json`).
 2. **Construire la génération des visuels** : transformer chaque description de storyboard
-   en une véritable animation (motion graphics), au lieu d'une simple description textuelle.
+   en une véritable animation (motion graphics), au lieu d'une simple description textuelle —
+   en cours (projet Remotion sous `remotion/`).
 3. **Assembler chaque scène** : combiner l'audio (voix originale découpée) et son visuel en
    une courte vidéo.
 4. **Assembler chaque chapitre**, puis **le cours complet**, avec une table des matières
@@ -250,6 +251,11 @@ de sélection (garder/couper) et de découpage audio réel.
 5. **Évaluer le résultat** selon les critères du cahier des charges (le contenu est-il bien
    préservé ? le résultat ressemble-t-il à un vrai cours ? la navigation est-elle pratique ?).
 6. **Documenter et préparer la restitution** (rapport de stage, soutenance).
+7. **Quiz de compréhension** (hors périmètre MVP du cahier des charges, section 14, mais
+   retenu comme évolution) : une interface de test/prototype sera développée séparément.
+   Matériel de référence disponible dans `docs/reference/` : les diapositives originales de
+   la formation (`slides_source.pdf`, 28 pages — bien plus propres que l'OCR extrait des
+   frames vidéo) et un exemple de quiz réel sur ce même contenu (`quiz_reference.docx`).
 
 ## 8. Petit glossaire pour les non-initiés
 
