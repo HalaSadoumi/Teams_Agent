@@ -7,10 +7,12 @@ import { AnimatedArrow, DeviceBox, Envelope, Figure, SceneLabel } from "../illus
  * user's machine, the user reacts, and an alert fires. Staged across the
  * scene's whole duration so it plays out like a little story rather than
  * appearing all at once. */
-export const PhishingScenario: React.FC<{ label?: string; durationInFrames: number }> = ({
-  label,
-  durationInFrames,
-}) => {
+export const ActorActionTarget: React.FC<{
+  label?: string;
+  primary: string;
+  secondary: string;
+  durationInFrames: number;
+}> = ({ label, primary, secondary, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames; // 0..1 through the scene
@@ -34,7 +36,7 @@ export const PhishingScenario: React.FC<{ label?: string; durationInFrames: numb
       {label && <SceneLabel text={label} opacity={labelOpacity} />}
       <svg width="100%" height="100%" viewBox="-960 -540 1920 1080">
         <g transform="translate(0 40)">
-          <Figure x={-470} y={0} scale={1.15} variant="attacker" opacity={attackerIn} label="Attaquant" />
+          <Figure x={-470} y={0} scale={1.15} variant="attacker" opacity={attackerIn} label={primary || "Source"} />
 
           <AnimatedArrow
             from={[-380, -60]}
@@ -52,7 +54,7 @@ export const PhishingScenario: React.FC<{ label?: string; durationInFrames: numb
             y={-20}
             w={210}
             h={140}
-            label="Votre poste"
+            label={secondary || "Destinataire"}
             color={impact > 0.4 ? COLORS.accent3 : COLORS.accent}
             opacity={victimIn}
             scale={victimIn * (1 + impact * 0.04)}

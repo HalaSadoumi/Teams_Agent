@@ -8,12 +8,13 @@ const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3];
 /** Least-privilege: a user on the left, resources on the right, and only the
  * authorised link lights up green while the others are barred — each row
  * resolving in turn. */
-export const AccessControl: React.FC<{
+export const PermissionMatrix: React.FC<{
   label?: string;
   items: string[];
+  primary: string;
   secondary: string;
   durationInFrames: number;
-}> = ({ label, items, secondary, durationInFrames }) => {
+}> = ({ label, items, primary, secondary, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames;
@@ -32,7 +33,7 @@ export const AccessControl: React.FC<{
       <svg width="100%" height="100%" viewBox="-960 -540 1920 1080">
         <g transform="translate(0 90)">
           <g opacity={userIn} transform={`translate(${(1 - userIn) * -70} 0)`}>
-            <Figure x={-620} y={20} scale={1.4} variant="neutral" label="Utilisateur" />
+            <Figure x={-620} y={20} scale={1.4} variant="neutral" label={primary || "Profil"} />
           </g>
 
           {rows.map((item, i) => {

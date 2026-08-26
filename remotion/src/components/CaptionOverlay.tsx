@@ -2,20 +2,39 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { COLORS, FONT } from "../theme";
 import { chunkWords, getChunkAt } from "../narrationChunks";
-import { isEmphasisWord } from "../conceptIcons";
 
-/** Supporting subtitle band: shows the real narration a line at a time, with
- * keyword words accented. Deliberately restrained (bottom of frame, moderate
- * size) because in the explainer style the animated scene above is the main
- * event — the text is there to follow along, not to carry the video. */
-export const CaptionOverlay: React.FC<{ narration: string; durationInFrames: number }> = ({
-  narration,
-  durationInFrames,
-}) => {
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[.,!?;:()«»"']/g, "");
+}
+
+/** Supporting subtitle band: shows the real narration a line at a time.
+ *
+ * Words that also appear in this scene's own label/items are accented, so the
+ * spoken words tie visually to what the diagram is showing. Highlighting is
+ * therefore derived from the generated plan, not from a hardcoded keyword
+ * list — nothing here is specific to any subject matter. */
+export const CaptionOverlay: React.FC<{
+  narration: string;
+  durationInFrames: number;
+  highlight?: string[];
+}> = ({ narration, durationInFrames, highlight = [] }) => {
   const frame = useCurrentFrame();
   const chunks = chunkWords(narration, 52);
   const { index, localFrame, chunkDuration } = getChunkAt(frame, durationInFrames, chunks.length);
   const words = chunks[index].split(" ");
+
+  // Words worth accenting: those appearing in the scene's own labels, kept to
+  // reasonably long tokens so articles and prepositions don't light up.
+  const keywords = new Set(
+    highlight
+      .flatMap((h) => h.split(/\s+/))
+      .map(normalize)
+      .filter((w) => w.length > 4)
+  );
 
   const opacity = interpolate(
     localFrame,
@@ -40,7 +59,10 @@ export const CaptionOverlay: React.FC<{ narration: string; durationInFrames: num
       >
         <div style={{ fontFamily: FONT, fontSize: 34, fontWeight: 600, lineHeight: 1.35, textAlign: "center" }}>
           {words.map((w, i) => (
-            <span key={i} style={{ color: isEmphasisWord(w) ? COLORS.accent : COLORS.text, marginRight: 9 }}>
+            <span
+              key={i}
+              style={{ color: keywords.has(normalize(w)) ? COLORS.accent : COLORS.text, marginRight: 9 }}
+            >
               {w}
             </span>
           ))}

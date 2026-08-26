@@ -25,4 +25,8 @@ export interface VisualPlan {
   items: string[];
   primary: string;
   secondary: string;
+  /** Lucide icon name, validated during planning against the installed set. */
+  icon: string;
+  /** English description used to generate this scene's backdrop image. */
+  image_prompt: string;
 }

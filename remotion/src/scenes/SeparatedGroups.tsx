@@ -7,7 +7,7 @@ const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3];
 
 /** Network segmentation: zones appear side by side and a firewall barrier
  * drops between them, blocking lateral movement. */
-export const NetworkZones: React.FC<{
+export const SeparatedGroups: React.FC<{
   label?: string;
   items: string[];
   secondary: string;
