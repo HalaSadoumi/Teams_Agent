@@ -21,3 +21,10 @@ output/*
 
 .tessdata/
 .claude/
+
+remotion/node_modules/
+remotion/out/
+remotion/public/audio/
+remotion/public/storyboard.json
+remotion/public/scene_visuals.json
+remotion/*.log
