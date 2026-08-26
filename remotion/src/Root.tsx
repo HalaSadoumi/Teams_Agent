@@ -1,7 +1,6 @@
 import React from "react";
 import { Composition } from "remotion";
 import { ChapterComposition } from "./components/ChapterComposition";
-import { DemoComposition, DEMO_SCENES } from "./DemoComposition";
 import { StoryboardScene } from "./types";
 import scenesData from "../public/storyboard.json";
 
@@ -11,21 +10,10 @@ const HEIGHT = 1080;
 
 const allScenes = scenesData as StoryboardScene[];
 const chapterIds = Array.from(new Set(allScenes.map((s) => s.chapter_id)));
-const demoDurationInFrames = Math.round(
-  DEMO_SCENES.reduce((acc, s) => acc + s.duration, 0) * FPS
-);
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition
-        id="demo-explainer"
-        component={DemoComposition}
-        durationInFrames={demoDurationInFrames}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
       {chapterIds.map((chapterId) => {
         const scenes = allScenes.filter((s) => s.chapter_id === chapterId);
         const totalSeconds = scenes.reduce((acc, s) => acc + s.duration, 0);
