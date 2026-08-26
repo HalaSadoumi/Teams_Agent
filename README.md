@@ -13,22 +13,29 @@ Profil technique ? Voir [docs/ARCHITECTURE_TECHNIQUE.md](docs/ARCHITECTURE_TECHN
 documentation module par module (architecture, schémas de données, décisions
 d'implémentation), avec un état d'avancement honnête par composant.
 
-## État actuel : Sprint 2 (Semaines 3-4)
+## État actuel : Sprint 3 (Semaines 5-6)
 
-**Sprint 1** (ingestion) : pipeline fonctionnel — extraction audio,
+**Sprint 1** (ingestion) — terminé : extraction et amélioration de l'audio,
 transcription ASR + sous-titres, détection de locuteurs, détection de scènes
-visuelles, OCR des diapositives — produisant une première représentation
-multimodale du contenu (liste d'objets `Scene`, cahier des charges section 8.1).
+visuelles, OCR des diapositives, produisant une représentation multimodale du
+contenu (liste d'objets `Scene`, cahier des charges section 8.1).
 
-**Sprint 2** (compréhension + chapitrage) : segmentation par ruptures
-sémantiques (Sentence-Transformers) puis génération, par chapitre, d'un
-titre/résumé/points clés via un LLM multimodal (Gemini) qui reçoit à la fois
-la transcription ET les frames représentatives — pas seulement l'OCR (cahier
-des charges section 5.2, "point critique du projet").
+**Sprint 2** (compréhension + chapitrage) — terminé : segmentation par
+ruptures sémantiques (Sentence-Transformers) puis génération, par chapitre,
+d'un titre/résumé/points clés via un LLM multimodal (Gemini) qui reçoit à la
+fois la transcription ET les frames représentatives — pas seulement l'OCR
+(cahier des charges section 5.2, "point critique du projet"). Validé sur la
+vidéo réelle complète : 17 chapitres de 3 à 11 minutes.
 
-Ce que le pipeline ne fait **pas encore** (Sprints 3-4) : génération du
-script pédagogique, storyboard visuel, génération des visuels, narration
-TTS, assemblage vidéo final, lecteur de cours navigable par chapitres.
+**Sprint 3** (narration + visuels animés) — en cours : narration à la voix
+originale de l'intervenant (261 scènes générées sur la vidéo complète), et
+génération des visuels animés à partir d'un vocabulaire de 12 archétypes de
+scènes, choisis automatiquement par le LLM d'après le contenu de chaque
+scène.
+
+**Sprint 4** (assemblage) — le code d'assemblage du cours complet et des
+métadonnées de chapitrage est en place (`assemble.py`) ; l'évaluation finale
+selon les critères du cahier des charges reste à mener.
 
 ## Installation
 
@@ -94,6 +101,63 @@ frames représentatives par scène.
   de les régénérer — utile après une erreur de quota (voir ci-dessous), le
   résultat est sauvegardé après chaque chapitre généré.
 
+**Sprint 3 — narration + storyboard.** Deux modes sont implémentés (voir
+« Deux modes de narration » ci-dessous). Mode actuellement retenu, voix
+originale de l'intervenant :
+
+```bash
+.venv\Scripts\python -m s2m_pipeline.narration_original --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --master-audio output/<nom_video>/audio.wav --output-dir output/<nom_video>/narration_original --output output/storyboard.json
+```
+
+**Sprint 3 — plan des visuels animés** (choisit un archétype de scène animée
+par scène et remplit ses textes) :
+
+```bash
+.venv\Scripts\python -m s2m_pipeline.scene_visuals --storyboard output/storyboard.json --scenes output/scenes.json --chapters output/chapters.json --output output/scene_visuals.json --resume
+```
+
+**Rendu vidéo** (Remotion). Copier d'abord les données et l'audio dans
+`remotion/public/`, puis :
+
+```bash
+cd remotion && bash render-all.sh
+```
+
+**Sprint 4 — assemblage du cours complet** (concaténation + métadonnées de
+chapitrage) :
+
+```bash
+.venv\Scripts\python -m s2m_pipeline.assemble --chapters output/chapters.json --video-dir remotion/out --output-dir output/course
+```
+
+## Deux modes de narration
+
+Le cahier des charges (section 6.2) demande d'évaluer trois approches de
+narration. Deux sont implémentées ici, et restent interchangeables : elles
+produisent toutes deux un `storyboard.json` au même format, donc tout ce qui
+suit (plan des visuels, rendu, assemblage) est identique.
+
+**Mode A — voix originale de l'intervenant (retenu actuellement).**
+`content_selection.py` classe chaque segment de parole en « garder » ou
+« couper », puis `narration_original.py` découpe et recolle directement le
+vrai audio. Les mots ne sont jamais réécrits : la narration est exactement ce
+que l'intervenant a dit, débarrassé des hésitations.
+
+**Mode B — narration par synthèse vocale (en veille, réactivable).**
+`script.py` fait réécrire le transcript en un script pédagogique propre,
+`storyboard.py` le découpe en scènes, puis `narration.py` + `tts.py`
+synthétisent la voix (edge-tts, gratuit, sans clé API) :
+
+```bash
+.venv\Scripts\python -m s2m_pipeline.script --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --output output/scripts.json
+.venv\Scripts\python -m s2m_pipeline.storyboard --chapters output/chapters.json --scripts output/scripts.json --scenes output/scenes.json --output output/storyboard.json
+.venv\Scripts\python -m s2m_pipeline.narration --storyboard output/storyboard.json --output-dir output/<nom_video>/narration --output output/storyboard.json
+```
+
+Ces quatre modules ne sont importés par aucun module du mode A : ils sont
+conservés délibérément comme alternative, pas par oubli. Basculer d'un mode à
+l'autre ne demande que de lancer la série de commandes correspondante.
+
 ### ⚠️ Quota Gemini (limite du tier gratuit)
 
 `gemini-3.6-flash` (le modèle le plus capable) est limité à **20
@@ -111,18 +175,42 @@ Groq comme deuxième repli).
 
 ```
 src/s2m_pipeline/
-  config.py          Paramètres (variables d'environnement, .env)
-  models.py           Schémas Scene / Chapter / StoryboardScene (section 8)
-  audio.py             Extraction audio (FFmpeg)
-  transcription.py     ASR (faster-whisper, CPU)
-  diarization.py        Détection des locuteurs (pyannote.audio, optionnel)
-  scenes.py            Détection de scènes visuelles + extraction de frames
-  ocr.py                 OCR des diapositives (Tesseract)
-  subtitles.py           Génération SRT / VTT à partir du transcript ASR
-  pipeline.py           Orchestrateur Sprint 1 + CLI
-  embeddings.py          Détection de ruptures sémantiques (Sentence-Transformers)
-  llm.py                  Génération de contenu multimodale (Gemini)
-  chaptering.py           Orchestrateur Sprint 2 (chapitrage) + CLI
+  config.py               Paramètres (variables d'environnement, .env)
+  models.py               Schémas Scene / Chapter / StoryboardScene (section 8)
+  llm.py                  Appels au LLM multimodal (Gemini) + prompts
+
+  # Ingestion
+  audio.py                Extraction, amélioration, découpage/recollage audio (FFmpeg)
+  transcription.py        ASR (faster-whisper, CPU)
+  diarization.py          Détection des locuteurs (pyannote.audio, optionnel)
+  scenes.py               Détection de scènes visuelles + extraction de frames
+  ocr.py                  OCR des diapositives (Tesseract)
+  subtitles.py            Génération SRT / VTT à partir du transcript ASR
+  pipeline.py             Orchestrateur d'ingestion + CLI
+
+  # Compréhension et chapitrage
+  embeddings.py           Détection de ruptures sémantiques (Sentence-Transformers)
+  chaptering.py           Orchestrateur de chapitrage + CLI
+
+  # Narration — mode A, voix originale (retenu)
+  content_selection.py    Classification garder / couper par segment
+  narration_original.py   Regroupement, découpage audio réel, storyboard
+
+  # Narration — mode B, synthèse vocale (en veille)
+  script.py               Réécriture du script pédagogique
+  storyboard.py           Découpage du script réécrit en scènes
+  narration.py            Orchestrateur de synthèse vocale
+  tts.py                  Synthèse vocale (edge-tts)
+
+  # Visuels et assemblage
+  scene_visuals.py        Choix d'un archétype animé par scène + textes
+  assemble.py             Cours complet + métadonnées de chapitrage
+
+remotion/
+  src/scenes/             Les 12 archétypes de scènes animées (un composant chacun)
+  src/illustrations/      Primitives vectorielles (personnages, appareils, flèches...)
+  src/components/         Fond animé, sous-titres, dispatcher, composition de chapitre
+  render-all.sh           Rendu de tous les chapitres (reprenable)
 ```
 
 ## Choix techniques
