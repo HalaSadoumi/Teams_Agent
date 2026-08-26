@@ -7,11 +7,12 @@ const PALETTE = [COLORS.accent3, COLORS.accent2, COLORS.accent, COLORS.accent2];
 
 /** Concentric protection layers building outward from the asset at the
  * centre — the "defense in depth" beat. */
-export const LayeredDefense: React.FC<{ label?: string; items: string[]; durationInFrames: number }> = ({
-  label,
-  items,
-  durationInFrames,
-}) => {
+export const ConcentricLayers: React.FC<{
+  label?: string;
+  items: string[];
+  primary: string;
+  durationInFrames: number;
+}> = ({ label, items, primary, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames;
@@ -71,7 +72,7 @@ export const LayeredDefense: React.FC<{ label?: string; items: string[]; duratio
           <g transform={`scale(${corePulse})`}>
             <circle r={94} fill={`${COLORS.accent}33`} stroke={COLORS.accent} strokeWidth={5} />
             <text y={10} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={28} fontWeight={800}>
-              Données
+              {primary || "Coeur"}
             </text>
           </g>
         </g>

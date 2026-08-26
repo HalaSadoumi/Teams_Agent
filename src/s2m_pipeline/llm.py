@@ -353,19 +353,46 @@ def generate_visual_plan(
 # renderer generic - the LLM picks an archetype and fills its text slots,
 # and no scene needs bespoke code.
 SCENE_ARCHETYPES = {
-    "pillars": "2 a 4 fondements nommes qui s'elevent (ex. Confidentialite/Integrite/Disponibilite, types de mesures)",
-    "attack_scenario": "un attaquant envoie une attaque vers une victime (phishing, ingenierie sociale, intrusion)",
-    "data_flow": "des sources alimentent un traitement central puis un resultat (collecte, controle, validation)",
-    "layered_defense": "des couches de protection concentriques (defense en profondeur, plusieurs niveaux)",
-    "comparison": "deux situations opposees cote a cote (bonne vs mauvaise pratique, avant/apres)",
-    "checklist": "une liste de bonnes pratiques qui se cochent une a une",
-    "stat_reveal": "un chiffre cle mis en avant avec son contexte (pourcentage, montant, statistique)",
+    "pillars": "2 a 4 fondements/piliers nommes qui s'elevent (les composantes d'un concept)",
+    "actor_action_target": "un acteur agit sur une cible, avec un effet (un envoi, une demande, une attaque, une sollicitation)",
+    "data_flow": "des sources alimentent une etape centrale puis un resultat (collecte, traitement, validation)",
+    "concentric_layers": "des couches/niveaux successifs autour d'un element central",
+    "comparison": "deux situations opposees cote a cote (bon vs mauvais, avant/apres, deux options)",
+    "checklist": "une liste de points/regles qui se cochent une a une",
+    "stat_reveal": "un chiffre cle mis en avant avec son contexte (pourcentage, montant, duree)",
     "timeline": "des etapes qui se succedent dans le temps (processus, evolution, chronologie)",
-    "lock_state": "des donnees qui se verrouillent ou se deverrouillent (chiffrement, rancongiciel, acces)",
-    "access_control": "des roles avec des droits d'acces differencies (habilitations, moindre privilege)",
-    "network_zones": "un reseau decoupe en zones cloisonnees (segmentation, cloisonnement)",
+    "state_change": "des elements qui passent d'un etat a un autre (verrouillage, validation, transformation)",
+    "permission_matrix": "des roles/profils avec des droits ou acces differencies",
+    "separated_groups": "des groupes ou zones cloisonnes, separes par une barriere",
     "title_statement": "une definition ou un message cle affiche typographiquement, sans schema",
 }
+
+# Domain-neutral icon vocabulary, validated against the installed
+# lucide-react package. The LLM picks one per scene, so the visuals adapt to
+# any subject matter instead of depending on a hardcoded keyword dictionary
+# built for one domain.
+SCENE_ICONS = [
+    "User", "Users", "UserCheck", "UserX", "UserPlus", "UserMinus", "Handshake", "Baby",
+    "GraduationCap", "Briefcase", "Crown", "Contact", "Mail", "MessageSquare", "MessageCircle", "Phone",
+    "Megaphone", "Bell", "Send", "Share2", "Video", "Mic", "Languages", "FileText",
+    "Files", "Folder", "FolderOpen", "ClipboardList", "ClipboardCheck", "BookOpen", "Newspaper", "Database",
+    "Table", "Archive", "FileSignature", "Receipt", "Stamp", "Banknote", "Coins", "CreditCard",
+    "PiggyBank", "TrendingUp", "TrendingDown", "ChartBar", "ChartPie", "ChartLine", "Calculator", "ShoppingCart",
+    "Tag", "Landmark", "Building2", "Store", "Factory", "Clock", "Calendar", "CalendarDays",
+    "Timer", "Hourglass", "History", "AlarmClock", "Laptop", "Smartphone", "Monitor", "Server",
+    "Cloud", "Wifi", "Globe", "Code", "Terminal", "Cpu", "HardDrive", "Printer",
+    "Plug", "Settings", "Wrench", "Cog", "Shield", "ShieldCheck", "ShieldAlert", "Lock",
+    "Unlock", "Key", "KeyRound", "Fingerprint", "Eye", "EyeOff", "Bug", "Siren",
+    "Flame", "Radar", "Check", "CheckCheck", "X", "Ban", "Plus", "Minus",
+    "ArrowRight", "ArrowUp", "ArrowDown", "RefreshCw", "Play", "Pause", "Search", "Filter",
+    "Download", "Upload", "Link", "Copy", "Trash2", "Pencil", "Save", "AlertCircle",
+    "AlertTriangle", "AlertOctagon", "Info", "HelpCircle", "CircleQuestionMark", "Lightbulb", "Sparkles", "Star",
+    "Award", "Trophy", "Target", "Flag", "MapPin", "Map", "Truck", "Package",
+    "Plane", "Car", "Home", "Warehouse", "Route", "Navigation", "HeartPulse", "Stethoscope",
+    "Activity", "Brain", "Hand", "Smile", "Frown", "ThumbsUp", "ThumbsDown", "Scale",
+    "Gavel", "Leaf", "Droplet", "Zap", "Sun", "Recycle", "Layers", "GitBranch",
+    "Workflow", "Network", "Puzzle", "Scissors", "Compass", "Bookmark", "Percent",
+]
 
 
 class SceneVisualPlan(BaseModel):
@@ -375,6 +402,8 @@ class SceneVisualPlan(BaseModel):
     items: list[str]
     primary: str
     secondary: str
+    icon: str
+    image_prompt: str
 
 
 class SceneVisualPlanOutput(BaseModel):
@@ -394,20 +423,31 @@ Pour chaque scene, reponds avec :
 - "label" : titre court de la scene (3-6 mots), affiche en haut
 - "items" : les elements nommes du schema, 2 a 4 libelles TRES courts (1-3 mots chacun).
   Selon l'archetype : les fondements (pillars), les sources (data_flow), les couches
-  (layered_defense), les deux cotes (comparison), les points a cocher (checklist), les
-  etapes (timeline), les roles (access_control), les zones (network_zones).
-  Pour attack_scenario, stat_reveal, lock_state et title_statement, mets une liste vide.
-- "primary" : selon l'archetype - le traitement central (data_flow), le chiffre (stat_reveal,
-  ex. "61%"), le message principal (title_statement), sinon chaine vide
+  (concentric_layers), les deux cotes (comparison), les points a cocher (checklist), les
+  etapes (timeline), les roles (permission_matrix), les groupes (separated_groups).
+  Pour actor_action_target, stat_reveal, state_change et title_statement, mets une liste vide.
+- "primary" : selon l'archetype - l'etape centrale (data_flow), le chiffre (stat_reveal,
+  ex. "61%"), le message principal (title_statement), l'acteur qui agit
+  (actor_action_target), l'etat final (state_change), l'element central
+  (concentric_layers), sinon chaine vide
 - "secondary" : selon l'archetype - le resultat final (data_flow), le libelle du chiffre
-  (stat_reveal), le toit/synthese (pillars), sinon chaine vide
+  (stat_reveal), la synthese (pillars), la cible qui subit l'action (actor_action_target),
+  la precision sous le schema (state_change, permission_matrix, separated_groups),
+  sinon chaine vide
+- "icon" : une icone illustrant le concept principal de la scene, choisie EXACTEMENT dans
+  cette liste : {icons}
+- "image_prompt" : une description visuelle EN ANGLAIS, en 6 a 12 mots, de l'illustration
+  d'ambiance a generer en fond de scene. Decris une situation ou un objet concret lie au
+  propos (ex. "employee reviewing documents at office desk"). N'y mets JAMAIS de texte,
+  de mot ecrit, de chiffre, de logo ni de marque.
 
 Choisis l'archetype d'apres le SENS de la narration, pas au hasard, et varie les archetypes \
 d'une scene a l'autre quand le contenu s'y prete. Si aucun schema ne convient vraiment, \
 utilise "title_statement".
 
 Tous les textes affiches doivent etre en francais, courts, et utiliser les accents corrects \
-(é, è, à, ç). Reponds pour CHAQUE scene, sans en omettre aucune.
+(é, è, à, ç) - sauf "image_prompt" qui est en anglais. Reponds pour CHAQUE scene, sans en \
+omettre aucune.
 
 --- SCENES DE NARRATION ---
 {scenes_text}
@@ -428,6 +468,7 @@ def generate_scene_visual_plans(
         scenes_text=scenes_text,
         ocr_text=ocr_text or "(aucun texte detecte a l'ecran)",
         archetypes=archetypes,
+        icons=", ".join(SCENE_ICONS),
     )
     response = _generate_content(
         client,
@@ -454,6 +495,12 @@ def generate_scene_visual_plans(
                 items=[],
                 primary=text[:70],
                 secondary="",
+                icon="Info",
+                image_prompt="abstract professional workspace atmosphere",
             )
+        elif plan.icon not in SCENE_ICONS:
+            # The model occasionally invents an icon name; snap it back to a
+            # valid one so the renderer never has to guess.
+            plan = plan.model_copy(update={"icon": "Info"})
         result[idx] = plan
     return result

@@ -4,29 +4,39 @@ import { StoryboardScene, VisualPlan } from "../types";
 import { SceneRenderer } from "./SceneRenderer";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { AnimatedBackground } from "./AnimatedBackground";
+import { SceneBackdrop } from "./SceneBackdrop";
 import visualPlansData from "../../public/scene_visuals.json";
+import backdropList from "../../public/backdrops.json";
 
 const VISUAL_PLANS = visualPlansData as Record<string, VisualPlan>;
+// Which scenes actually have a generated backdrop on disk. Generation is a
+// best-effort batch, so the renderer must cope with any subset being present.
+const BACKDROPS = new Set(backdropList as string[]);
 
 export const ChapterComposition: React.FC<{ scenes: StoryboardScene[] }> = ({ scenes }) => {
   const { fps } = useVideoConfig();
 
   return (
     <AbsoluteFill>
-      {/* Rendered once, outside the Series, so the drifting background keeps
-       * moving continuously across scene cuts instead of resetting. */}
+      {/* Drawn once, outside the Series, so the drifting gradient keeps moving
+       * across scene cuts instead of restarting. Scenes that have a generated
+       * backdrop cover it; the rest show it directly. */}
       <AnimatedBackground />
       <Series>
         {scenes.map((scene) => {
           const durationInFrames = Math.max(1, Math.round(scene.duration * fps));
+          const plan = VISUAL_PLANS[scene.scene_id];
           return (
             <Series.Sequence key={scene.scene_id} durationInFrames={durationInFrames}>
-              <SceneRenderer
-                scene={scene}
-                plan={VISUAL_PLANS[scene.scene_id]}
+              {BACKDROPS.has(scene.scene_id) && (
+                <SceneBackdrop sceneId={scene.scene_id} durationInFrames={durationInFrames} />
+              )}
+              <SceneRenderer scene={scene} plan={plan} durationInFrames={durationInFrames} />
+              <CaptionOverlay
+                narration={scene.narration}
                 durationInFrames={durationInFrames}
+                highlight={plan ? [plan.label, ...plan.items] : []}
               />
-              <CaptionOverlay narration={scene.narration} durationInFrames={durationInFrames} />
               <Audio src={staticFile(`audio/${scene.scene_id}.wav`)} />
             </Series.Sequence>
           );

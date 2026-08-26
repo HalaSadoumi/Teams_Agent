@@ -5,7 +5,7 @@ import { LockShape, SceneLabel } from "../illustrations/primitives";
 
 /** Data getting secured: scattered document tiles converge and a padlock
  * snaps shut over them (encryption / access lock-down). */
-export const LockState: React.FC<{
+export const StateChange: React.FC<{
   label?: string;
   primary: string;
   secondary: string;
