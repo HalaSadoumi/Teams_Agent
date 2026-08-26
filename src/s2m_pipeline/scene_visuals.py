@@ -64,6 +64,8 @@ def build_scene_visuals(
                 "items": plan.items,
                 "primary": plan.primary,
                 "secondary": plan.secondary,
+                "icon": plan.icon,
+                "image_prompt": plan.image_prompt,
             }
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
