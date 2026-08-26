@@ -50,6 +50,11 @@ def enhance_audio(input_wav_path: Path, output_wav_path: Path) -> Path:
         str(input_wav_path),
         "-af",
         "afftdn=nf=-25,loudnorm=I=-16:TP=-1.5:LRA=11",
+        # loudnorm's internal resampling defaults to 192 kHz if not pinned,
+        # which is pure waste for 16 kHz speech (12x file size, no audible
+        # benefit) - force the output back to the input rate.
+        "-ar",
+        "16000",
         str(output_wav_path),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)

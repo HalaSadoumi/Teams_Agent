@@ -343,3 +343,117 @@ def generate_visual_plan(
         index=-1, visual_type="bullet_list", visual_description="", on_screen_text="", transition="fade"
     )
     return {idx: by_index.get(idx, default_plan) for idx, _ in indexed_narrations}
+
+
+# --- Animated explainer scenes (Sprint 3, visual generation) -----------------
+#
+# Controlled vocabulary of animated scene archetypes. Each maps 1:1 to a
+# React/Remotion component that draws and animates itself; keeping the list
+# closed (rather than free-form visual descriptions) is what makes the
+# renderer generic - the LLM picks an archetype and fills its text slots,
+# and no scene needs bespoke code.
+SCENE_ARCHETYPES = {
+    "pillars": "2 a 4 fondements nommes qui s'elevent (ex. Confidentialite/Integrite/Disponibilite, types de mesures)",
+    "attack_scenario": "un attaquant envoie une attaque vers une victime (phishing, ingenierie sociale, intrusion)",
+    "data_flow": "des sources alimentent un traitement central puis un resultat (collecte, controle, validation)",
+    "layered_defense": "des couches de protection concentriques (defense en profondeur, plusieurs niveaux)",
+    "comparison": "deux situations opposees cote a cote (bonne vs mauvaise pratique, avant/apres)",
+    "checklist": "une liste de bonnes pratiques qui se cochent une a une",
+    "stat_reveal": "un chiffre cle mis en avant avec son contexte (pourcentage, montant, statistique)",
+    "timeline": "des etapes qui se succedent dans le temps (processus, evolution, chronologie)",
+    "lock_state": "des donnees qui se verrouillent ou se deverrouillent (chiffrement, rancongiciel, acces)",
+    "access_control": "des roles avec des droits d'acces differencies (habilitations, moindre privilege)",
+    "network_zones": "un reseau decoupe en zones cloisonnees (segmentation, cloisonnement)",
+    "title_statement": "une definition ou un message cle affiche typographiquement, sans schema",
+}
+
+
+class SceneVisualPlan(BaseModel):
+    index: int
+    archetype: str
+    label: str
+    items: list[str]
+    primary: str
+    secondary: str
+
+
+class SceneVisualPlanOutput(BaseModel):
+    plans: list[SceneVisualPlan]
+
+
+_SCENE_VISUAL_PROMPT = """Tu es un directeur artistique de video pedagogique. Pour chaque \
+scene de narration ci-dessous (texte reel, deja fixe - ne le reecris jamais), choisis le \
+schema anime qui ILLUSTRE ce qui est dit, et fournis les textes courts a afficher dedans.
+
+Archetypes disponibles (choisis l'identifiant exact) :
+{archetypes}
+
+Pour chaque scene, reponds avec :
+- "index" : le meme numero que la scene d'entree
+- "archetype" : un identifiant EXACT de la liste ci-dessus
+- "label" : titre court de la scene (3-6 mots), affiche en haut
+- "items" : les elements nommes du schema, 2 a 4 libelles TRES courts (1-3 mots chacun).
+  Selon l'archetype : les fondements (pillars), les sources (data_flow), les couches
+  (layered_defense), les deux cotes (comparison), les points a cocher (checklist), les
+  etapes (timeline), les roles (access_control), les zones (network_zones).
+  Pour attack_scenario, stat_reveal, lock_state et title_statement, mets une liste vide.
+- "primary" : selon l'archetype - le traitement central (data_flow), le chiffre (stat_reveal,
+  ex. "61%"), le message principal (title_statement), sinon chaine vide
+- "secondary" : selon l'archetype - le resultat final (data_flow), le libelle du chiffre
+  (stat_reveal), le toit/synthese (pillars), sinon chaine vide
+
+Choisis l'archetype d'apres le SENS de la narration, pas au hasard, et varie les archetypes \
+d'une scene a l'autre quand le contenu s'y prete. Si aucun schema ne convient vraiment, \
+utilise "title_statement".
+
+Tous les textes affiches doivent etre en francais, courts, et utiliser les accents corrects \
+(é, è, à, ç). Reponds pour CHAQUE scene, sans en omettre aucune.
+
+--- SCENES DE NARRATION ---
+{scenes_text}
+
+--- TEXTE OCR DES DIAPOSITIVES (contexte, pour reprendre les termes affiches a l'ecran) ---
+{ocr_text}
+"""
+
+
+def generate_scene_visual_plans(
+    indexed_narrations: list[tuple[int, str]], ocr_text: str
+) -> dict[int, SceneVisualPlan]:
+    """Map each narration scene to an animated archetype + its text slots."""
+    client = _get_client()
+    scenes_text = "\n".join(f"[{i}] {text}" for i, text in indexed_narrations)
+    archetypes = "\n".join(f"- {k} : {v}" for k, v in SCENE_ARCHETYPES.items())
+    prompt = _SCENE_VISUAL_PROMPT.format(
+        scenes_text=scenes_text,
+        ocr_text=ocr_text or "(aucun texte detecte a l'ecran)",
+        archetypes=archetypes,
+    )
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=SceneVisualPlanOutput,
+        ),
+    )
+    parsed = SceneVisualPlanOutput.model_validate_json(response.text)
+    by_index = {p.index: p for p in parsed.plans}
+
+    result: dict[int, SceneVisualPlan] = {}
+    for idx, text in indexed_narrations:
+        plan = by_index.get(idx)
+        if plan is None or plan.archetype not in SCENE_ARCHETYPES:
+            # Safe fallback: show the narration as a typographic statement
+            # rather than dropping the scene or guessing a wrong diagram.
+            plan = SceneVisualPlan(
+                index=idx,
+                archetype="title_statement",
+                label="",
+                items=[],
+                primary=text[:70],
+                secondary="",
+            )
+        result[idx] = plan
+    return result
