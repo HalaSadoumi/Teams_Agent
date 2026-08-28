@@ -28,3 +28,5 @@ remotion/public/audio/
 remotion/public/storyboard.json
 remotion/public/scene_visuals.json
 remotion/*.log
+remotion/public/backdrops/
+remotion/public/backdrops.json
