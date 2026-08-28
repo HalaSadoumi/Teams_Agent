@@ -306,9 +306,14 @@ def main() -> None:
     start_index = STAGES.index(args.from_stage) if args.from_stage else 0
 
     def should_run(stage: str, produced: Path) -> bool:
-        if STAGES.index(stage) < start_index:
+        index = STAGES.index(stage)
+        if index < start_index:
             return False
-        if STAGES.index(stage) > start_index and produced.exists():
+        # An explicit --from means "redo this stage", even though its output
+        # is already on disk; every other stage is skipped once produced.
+        if args.from_stage is not None and index == start_index:
+            return True
+        if produced.exists():
             print(f"  (already done — {produced.name})")
             return False
         return True
