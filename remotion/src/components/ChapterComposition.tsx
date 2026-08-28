@@ -5,6 +5,7 @@ import { SceneRenderer } from "./SceneRenderer";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { AnimatedBackground } from "./AnimatedBackground";
 import { SceneBackdrop } from "./SceneBackdrop";
+import { SceneTransition } from "./SceneTransition";
 import visualPlansData from "../../public/scene_visuals.json";
 import backdropList from "../../public/backdrops.json";
 
@@ -28,10 +29,12 @@ export const ChapterComposition: React.FC<{ scenes: StoryboardScene[] }> = ({ sc
           const plan = VISUAL_PLANS[scene.scene_id];
           return (
             <Series.Sequence key={scene.scene_id} durationInFrames={durationInFrames}>
-              {BACKDROPS.has(scene.scene_id) && (
-                <SceneBackdrop sceneId={scene.scene_id} durationInFrames={durationInFrames} />
-              )}
-              <SceneRenderer scene={scene} plan={plan} durationInFrames={durationInFrames} />
+              <SceneTransition sceneId={scene.scene_id}>
+                {BACKDROPS.has(scene.scene_id) && (
+                  <SceneBackdrop sceneId={scene.scene_id} durationInFrames={durationInFrames} />
+                )}
+                <SceneRenderer scene={scene} plan={plan} durationInFrames={durationInFrames} />
+              </SceneTransition>
               <CaptionOverlay
                 narration={scene.narration}
                 durationInFrames={durationInFrames}
