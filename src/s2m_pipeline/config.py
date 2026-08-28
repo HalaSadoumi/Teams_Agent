@@ -41,15 +41,16 @@ class Settings:
     # embedding, since embedding individual few-second ASR segments is too
     # noisy to detect topic shifts reliably.
     chapter_window_seconds: float = 60.0
-    # Below this cosine similarity between consecutive windows, a new
-    # chapter is proposed to start. Tuned empirically on the real S2M test
-    # video: 0.45 under-triggers (one 37-minute chapter), 0.60+ over-triggers
-    # (many chapters clamped to the minimum length below). 0.55 gave 17
-    # chapters of 3-10 min on a 95-minute video, matching the cahier's own
-    # Coursera-style example (~10 min/chapter average).
-    chapter_similarity_threshold: float = 0.55
-    # Candidate chapters shorter than this are merged into a neighbour, to
-    # avoid a flood of near-empty chapters from noisy boundaries.
+    # Chaptering is expressed as a goal, not a fixed threshold: the pipeline
+    # aims for chapters of roughly this length and searches for the
+    # similarity threshold that achieves it on the video at hand (see
+    # chaptering.calibrate). A hardcoded threshold would only ever suit the
+    # recording it was tuned on.
+    chapter_target_seconds: float = 330.0  # ~5.5 min, typical e-learning chapter
+    chapter_count_min: int = 3
+    chapter_count_max: int = 30
+    # Upper bound on the "merge chapters shorter than this" floor; it is
+    # scaled down for short videos so they can still be split at all.
     chapter_min_seconds: float = 180.0
 
 

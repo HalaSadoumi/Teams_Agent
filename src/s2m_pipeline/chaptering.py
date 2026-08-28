@@ -71,20 +71,19 @@ def _group_into_windows(
     return windows
 
 
-def _propose_boundaries(windows: list[_Window]) -> list[int]:
-    texts = [w.text or "(silence)" for w in windows]
-    sims = embeddings.similarity_drops(texts)
-
+def _boundaries_at(sims: list[float], threshold: float) -> list[int]:
     boundaries = [0]
     for i, sim in enumerate(sims):
         if i == 0:
             continue
-        if sim < settings.chapter_similarity_threshold:
+        if sim < threshold:
             boundaries.append(i)
     return boundaries
 
 
-def _merge_short_chapters(boundaries: list[int], windows: list[_Window]) -> list[int]:
+def _merge_short_chapters(
+    boundaries: list[int], windows: list[_Window], min_seconds: float
+) -> list[int]:
     if len(boundaries) <= 1:
         return boundaries
 
@@ -92,16 +91,57 @@ def _merge_short_chapters(boundaries: list[int], windows: list[_Window]) -> list
     for b in boundaries[1:]:
         chapter_start_time = windows[merged[-1]].start
         candidate_duration = windows[b - 1].end - chapter_start_time
-        if candidate_duration < settings.chapter_min_seconds:
+        if candidate_duration < min_seconds:
             continue  # too short: fold into the chapter being accumulated
         merged.append(b)
 
     if len(merged) > 1:
         last_duration = windows[-1].end - windows[merged[-1]].start
-        if last_duration < settings.chapter_min_seconds:
+        if last_duration < min_seconds:
             merged.pop()
 
     return merged
+
+
+def calibrate(windows: list[_Window]) -> tuple[list[int], float, float]:
+    """Pick the similarity threshold that best fits this particular video.
+
+    A fixed threshold only ever suits the recording it was tuned on: the same
+    value that yields 17 chapters on a 95-minute lecture yields one or two on
+    a 10-minute clip. Instead, derive a target number of chapters from the
+    video's own length (aiming for `chapter_target_seconds` per chapter,
+    within sane bounds) and sweep the threshold for the value landing closest
+    to it. Embeddings are computed once, so the sweep costs no API calls and
+    is negligible next to the rest of the pipeline.
+
+    Returns the chosen boundaries plus the threshold and minimum length used,
+    so callers can report what was actually applied.
+    """
+    total_seconds = windows[-1].end - windows[0].start if windows else 0.0
+    target_count = round(total_seconds / settings.chapter_target_seconds)
+    target_count = max(settings.chapter_count_min, min(settings.chapter_count_max, target_count))
+
+    # Keep short chapters from collapsing the structure, but scale the floor
+    # with the video so a short recording can still be split at all.
+    min_seconds = min(settings.chapter_min_seconds, total_seconds / (target_count * 2))
+
+    texts = [w.text or "(silence)" for w in windows]
+    sims = embeddings.similarity_drops(texts)
+
+    best: tuple[list[int], float] | None = None
+    best_distance: float | None = None
+    for step in range(0, 41):
+        threshold = 0.30 + step * 0.0125  # 0.30 .. 0.80
+        boundaries = _merge_short_chapters(_boundaries_at(sims, threshold), windows, min_seconds)
+        distance = abs(len(boundaries) - target_count)
+        if best_distance is None or distance < best_distance:
+            best, best_distance = (boundaries, threshold), distance
+        if distance == 0:
+            break
+
+    assert best is not None
+    boundaries, threshold = best
+    return boundaries, threshold, min_seconds
 
 
 def _overlapping_text(segments: list[TranscriptSegment], start: float, end: float) -> str:
@@ -143,8 +183,7 @@ def build_chapters(
     if not windows:
         return []
 
-    boundaries = _propose_boundaries(windows)
-    boundaries = _merge_short_chapters(boundaries, windows)
+    boundaries, _threshold, _min_seconds = calibrate(windows)
 
     existing_by_id: dict[str, Chapter] = {}
     if resume and checkpoint_path is not None and checkpoint_path.exists():
@@ -196,8 +235,7 @@ def _print_boundary_preview(transcript_segments: list[TranscriptSegment]) -> Non
     (no API calls, no wait) before committing to a full run.
     """
     windows = _group_into_windows(transcript_segments, settings.chapter_window_seconds)
-    boundaries = _propose_boundaries(windows)
-    boundaries = _merge_short_chapters(boundaries, windows)
+    boundaries, _threshold, _min_seconds = calibrate(windows)
 
     print(
         f"{len(windows)} windows, {len(boundaries)} candidate chapters "
