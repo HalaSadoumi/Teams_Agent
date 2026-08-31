@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cours — S2M</title>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/s2m-logo.png" alt="S2M" />
+    <span class="divider"></span>
+    <div>
+      <h1 id="course-title">Cours</h1>
+      <p id="course-meta">Chargement…</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:18px;">
+    <div class="progress-wrap" title="Progression">
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+      <span id="progress-label">0 %</span>
+    </div>
+    <a class="back-link" href="index.html">← Catalogue</a>
+  </div>
+</header>
+
+<main class="layout">
+  <nav class="sidebar" aria-label="Sommaire des chapitres">
+    <h2>Sommaire</h2>
+    <ol id="chapter-list"></ol>
+  </nav>
+
+  <section class="content">
+    <div class="player-card">
+      <video id="player" controls preload="metadata" playsinline></video>
+      <div class="player-info">
+        <h2 id="chapter-title">—</h2>
+        <p id="chapter-time" class="muted"></p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-panel="panel-summary" role="tab">Résumé</button>
+      <button class="tab" data-panel="panel-points" role="tab">Points clés</button>
+      <button class="tab" data-panel="panel-quiz" role="tab">Quiz</button>
+      <button class="tab" data-panel="panel-read" role="tab" id="tab-read" hidden>Lire le cours</button>
+    </div>
+
+    <div id="panel-summary" class="panel active">
+      <p id="chapter-summary"></p>
+    </div>
+
+    <div id="panel-points" class="panel">
+      <ul id="chapter-points"></ul>
+    </div>
+
+    <div id="panel-quiz" class="panel">
+      <div id="quiz-container"></div>
+    </div>
+
+    <div id="panel-read" class="panel">
+      <div class="pdf-actions">
+        <span class="muted">Support de formation complet, à lire ou télécharger.</span>
+        <a id="pdf-download" class="btn small" href="#" target="_blank" rel="noopener">Ouvrir dans un onglet</a>
+      </div>
+      <iframe id="pdf-frame" class="pdf-frame" title="Support de cours"></iframe>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prev-btn" class="btn">← Chapitre précédent</button>
+      <button id="next-btn" class="btn primary">Chapitre suivant →</button>
+    </div>
+  </section>
+</main>
+
+<script src="assets/player.js"></script>
+</body>
+</html>
