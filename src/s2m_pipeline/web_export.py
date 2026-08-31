@@ -28,7 +28,11 @@ CATALOG_PATH = DATA_DIR / "courses.json"
 
 
 def _export_chapters(
-    chapters: list[Chapter], video_dir: Path, course_dir: Path, copy_videos: bool
+    chapters: list[Chapter],
+    video_dir: Path,
+    course_dir: Path,
+    copy_videos: bool,
+    subtitle_dir: Path | None,
 ) -> tuple[list[dict], list[str]]:
     videos_dir = course_dir / "videos"
     videos_dir.mkdir(parents=True, exist_ok=True)
@@ -70,6 +74,14 @@ def _export_chapters(
             if not target.exists() or target.stat().st_size != source.stat().st_size:
                 shutil.copy(source, target)
 
+        # Subtitles ride alongside the video so the player can offer them as a
+        # switchable track; a chapter without one simply has no track.
+        if subtitle_dir:
+            vtt = subtitle_dir / f"{chapter.id}.vtt"
+            if vtt.exists():
+                shutil.copy(vtt, videos_dir / vtt.name)
+                exported[-1]["subtitles"] = f"{chapter.id}.vtt"
+
     return exported, missing
 
 
@@ -100,6 +112,7 @@ def export(
     quiz_path: Path | None,
     pdf_path: Path | None,
     thumbnail_path: Path | None,
+    subtitle_dir: Path | None,
     copy_videos: bool,
 ) -> None:
     chapters = [
@@ -108,7 +121,9 @@ def export(
     course_dir = DATA_DIR / course_id
     course_dir.mkdir(parents=True, exist_ok=True)
 
-    exported, missing = _export_chapters(chapters, video_dir, course_dir, copy_videos)
+    exported, missing = _export_chapters(
+        chapters, video_dir, course_dir, copy_videos, subtitle_dir
+    )
     (course_dir / "course_chapters.json").write_text(
         json.dumps(exported, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -170,6 +185,9 @@ def main() -> None:
     parser.add_argument("--pdf", type=Path, default=None, help="Reading support to offer")
     parser.add_argument("--thumbnail", type=Path, default=None)
     parser.add_argument(
+        "--subtitles", type=Path, default=None, help="Directory of <chapter_id>.vtt tracks"
+    )
+    parser.add_argument(
         "--no-videos", action="store_true", help="Only refresh metadata, skip copying videos"
     )
     args = parser.parse_args()
@@ -183,6 +201,7 @@ def main() -> None:
         args.quiz,
         args.pdf,
         args.thumbnail,
+        args.subtitles,
         copy_videos=not args.no_videos,
     )
 

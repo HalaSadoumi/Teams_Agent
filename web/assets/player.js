@@ -15,6 +15,7 @@ let chapters = [];
 let quizzes = {};
 let current = 0;
 let completed = new Set();
+let subtitlesOn = localStorage.getItem("s2m-subtitles") !== "off";
 
 /* ---------- helpers ---------- */
 
@@ -171,7 +172,32 @@ function selectChapter(index) {
 
   const player = document.getElementById("player");
   player.src = `${BASE}/videos/${chapter.id}.mp4`;
+
+  // Rebuild the subtitle track for this chapter. Subtitles are a separate
+  // WebVTT file rather than burnt into the picture, so the viewer can turn
+  // them off and their timing comes from the real speech timestamps.
+  [...player.querySelectorAll("track")].forEach((t) => t.remove());
+  if (chapter.subtitles) {
+    const track = document.createElement("track");
+    track.kind = "subtitles";
+    track.label = "Français";
+    track.srclang = "fr";
+    track.src = `${BASE}/videos/${chapter.subtitles}`;
+    track.default = subtitlesOn;
+    player.appendChild(track);
+  }
+
   player.load();
+  // textTracks only exist once the element has loaded the track.
+  player.addEventListener(
+    "loadedmetadata",
+    () => {
+      if (player.textTracks.length) {
+        player.textTracks[0].mode = subtitlesOn ? "showing" : "hidden";
+      }
+    },
+    { once: true }
+  );
 
   renderQuiz(chapter.id);
   renderChapterList();
@@ -243,6 +269,21 @@ async function init() {
 
   player.addEventListener("ended", () => {
     if (current < chapters.length - 1) selectChapter(current + 1);
+  });
+
+  const subtitleBtn = document.getElementById("subtitle-btn");
+  const refreshSubtitleBtn = () => {
+    subtitleBtn.textContent = subtitlesOn ? "Sous-titres : activés" : "Sous-titres : désactivés";
+    subtitleBtn.classList.toggle("primary", subtitlesOn);
+  };
+  refreshSubtitleBtn();
+  subtitleBtn.addEventListener("click", () => {
+    subtitlesOn = !subtitlesOn;
+    localStorage.setItem("s2m-subtitles", subtitlesOn ? "on" : "off");
+    if (player.textTracks.length) {
+      player.textTracks[0].mode = subtitlesOn ? "showing" : "hidden";
+    }
+    refreshSubtitleBtn();
   });
 
   document.getElementById("prev-btn").addEventListener("click", () => selectChapter(current - 1));

@@ -225,3 +225,28 @@ footer.site {
   text-align: center; padding: 26px; color: var(--muted);
   font-size: 13px; border-top: 1px solid var(--border); background: var(--surface);
 }
+
+/* ---------- player controls & AI notice ---------- */
+.player-controls {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 14px; flex-wrap: wrap;
+}
+
+.ai-notice {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 13px; cursor: help;
+}
+.ai-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+}
+
+/* Subtitle rendering over the video */
+video::cue {
+  background: rgba(8, 12, 22, .8);
+  color: #fff;
+  font-family: var(--font);
+  font-size: .9em;
+}

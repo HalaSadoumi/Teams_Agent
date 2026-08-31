@@ -2,10 +2,10 @@ import React from "react";
 import { AbsoluteFill, Audio, Series, staticFile, useVideoConfig } from "remotion";
 import { StoryboardScene, VisualPlan } from "../types";
 import { SceneRenderer } from "./SceneRenderer";
-import { CaptionOverlay } from "./CaptionOverlay";
 import { AnimatedBackground } from "./AnimatedBackground";
 import { SceneBackdrop } from "./SceneBackdrop";
 import { SceneTransition } from "./SceneTransition";
+import { AiBadge } from "./AiBadge";
 import visualPlansData from "../../public/scene_visuals.json";
 import backdropList from "../../public/backdrops.json";
 
@@ -35,16 +35,15 @@ export const ChapterComposition: React.FC<{ scenes: StoryboardScene[] }> = ({ sc
                 )}
                 <SceneRenderer scene={scene} plan={plan} durationInFrames={durationInFrames} />
               </SceneTransition>
-              <CaptionOverlay
-                narration={scene.narration}
-                durationInFrames={durationInFrames}
-                highlight={plan ? [plan.label, ...plan.items] : []}
-              />
               <Audio src={staticFile(`audio/${scene.scene_id}.wav`)} />
             </Series.Sequence>
           );
         })}
       </Series>
+      {/* Outside the Series so it stays put across scene cuts. Subtitles are
+       * no longer burnt in: they ship as a WebVTT track next to the video,
+       * timed from the real ASR segments and toggleable by the viewer. */}
+      <AiBadge />
     </AbsoluteFill>
   );
 };
