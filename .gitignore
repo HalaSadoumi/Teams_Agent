@@ -30,3 +30,4 @@ remotion/public/scene_visuals.json
 remotion/*.log
 remotion/public/backdrops/
 remotion/public/backdrops.json
+web/data/

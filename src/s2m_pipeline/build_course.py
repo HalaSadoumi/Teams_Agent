@@ -251,7 +251,18 @@ def run_render(paths: Paths) -> None:
         print(f"  [{i}/{len(chapters)}] {chapter_id} — rendering...")
         composition_id = chapter_id.replace("_", "-")
         result = subprocess.run(
-            [npx, "remotion", "render", "src/index.ts", composition_id, str(target), "--log=error"],
+            [
+                npx, "remotion", "render", "src/index.ts", composition_id, str(target),
+                "--log=error",
+                # The generated backdrops are blurred and composited, so a
+                # frame can take well over Remotion's 30s default on a busy
+                # CPU-only machine; a long per-frame budget avoids losing a
+                # whole chapter to one slow frame.
+                "--timeout=180000",
+                # Leave a core free so the machine stays usable during the
+                # multi-hour batch.
+                "--concurrency=50%",
+            ],
             cwd=REMOTION_DIR,
             capture_output=True,
             text=True,
