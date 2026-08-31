@@ -364,7 +364,13 @@ SCENE_ARCHETYPES = {
     "state_change": "des elements qui passent d'un etat a un autre (verrouillage, validation, transformation)",
     "permission_matrix": "des roles/profils avec des droits ou acces differencies",
     "separated_groups": "des groupes ou zones cloisonnes, separes par une barriere",
-    "title_statement": "une definition ou un message cle affiche typographiquement, sans schema",
+    "cycle": "des etapes qui bouclent et recommencent (processus continu, amelioration, repetition)",
+    "quadrant_matrix": "quatre cas / categories croisant deux dimensions",
+    "do_dont": "plusieurs bonnes pratiques face a plusieurs erreurs a eviter",
+    "hierarchy": "un ensemble et les elements qui le composent (categories, sous-parties)",
+    "stat_row": "PLUSIEURS chiffres cites cote a cote (ex. 61%, 45%, 30%)",
+    "quote_highlight": "une phrase forte ou une definition marquante, mise en exergue",
+    "title_statement": "un message cle affiche sobrement, quand aucun autre schema ne convient",
 }
 
 # Domain-neutral icon vocabulary, validated against the installed
@@ -424,8 +430,12 @@ Pour chaque scene, reponds avec :
 - "items" : les elements nommes du schema, 2 a 4 libelles TRES courts (1-3 mots chacun).
   Selon l'archetype : les fondements (pillars), les sources (data_flow), les couches
   (concentric_layers), les deux cotes (comparison), les points a cocher (checklist), les
-  etapes (timeline), les roles (permission_matrix), les groupes (separated_groups).
-  Pour actor_action_target, stat_reveal, state_change et title_statement, mets une liste vide.
+  etapes (timeline), les roles (permission_matrix), les groupes (separated_groups),
+  les etapes du cycle (cycle), les quatre cas (quadrant_matrix), les elements composants
+  (hierarchy), les chiffres au format "61% messagerie" (stat_row), et pour do_dont : en
+  alternance une bonne pratique puis une erreur, une bonne pratique puis une erreur.
+  Pour actor_action_target, stat_reveal, state_change, quote_highlight et title_statement,
+  mets une liste vide.
 - "primary" : selon l'archetype - l'etape centrale (data_flow), le chiffre (stat_reveal,
   ex. "61%"), le message principal (title_statement), l'acteur qui agit
   (actor_action_target), l'etat final (state_change), l'element central

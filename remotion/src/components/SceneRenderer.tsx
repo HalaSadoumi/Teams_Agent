@@ -1,5 +1,6 @@
 import React from "react";
 import { StoryboardScene, VisualPlan } from "../types";
+import { accentFor } from "../sceneAccent";
 import { PillarsDiagram } from "../scenes/PillarsDiagram";
 import { ActorActionTarget } from "../scenes/ActorActionTarget";
 import { DataFlowDiagram } from "../scenes/DataFlowDiagram";
@@ -12,12 +13,21 @@ import { StateChange } from "../scenes/StateChange";
 import { PermissionMatrix } from "../scenes/PermissionMatrix";
 import { SeparatedGroups } from "../scenes/SeparatedGroups";
 import { TitleStatement } from "../scenes/TitleStatement";
+import { CycleDiagram } from "../scenes/CycleDiagram";
+import { QuadrantMatrix } from "../scenes/QuadrantMatrix";
+import { DoDontList } from "../scenes/DoDontList";
+import { HierarchyTree } from "../scenes/HierarchyTree";
+import { StatRow } from "../scenes/StatRow";
+import { QuoteHighlight } from "../scenes/QuoteHighlight";
 
 /** Generic dispatch: every scene is rendered purely from its generated visual
  * plan (archetype + text slots), so no scene needs bespoke code and adding an
  * archetype means one component plus one vocabulary entry on the Python side.
- * The archetypes are deliberately domain-neutral - "actor acts on target"
- * rather than "phishing attack" - so the same set serves any subject matter. */
+ * The archetypes are deliberately domain-neutral — "actor acts on target"
+ * rather than "phishing attack" — so the same set serves any subject matter.
+ *
+ * The accent colour is derived from the scene id rather than fixed, so
+ * consecutive scenes differ visually even when they share an archetype. */
 export const SceneRenderer: React.FC<{
   scene: StoryboardScene;
   plan: VisualPlan | undefined;
@@ -32,6 +42,7 @@ export const SceneRenderer: React.FC<{
     icon: "Info",
     image_prompt: "",
   };
+  const accent = accentFor(scene.scene_id);
   const common = { label: p.label, durationInFrames };
 
   switch (p.archetype) {
@@ -57,6 +68,33 @@ export const SceneRenderer: React.FC<{
       return <PermissionMatrix {...common} items={p.items} primary={p.primary} secondary={p.secondary} />;
     case "separated_groups":
       return <SeparatedGroups {...common} items={p.items} secondary={p.secondary} />;
+    case "cycle":
+      return <CycleDiagram {...common} items={p.items} primary={p.primary} accent={accent} />;
+    case "quadrant_matrix":
+      return (
+        <QuadrantMatrix
+          {...common}
+          items={p.items}
+          primary={p.primary}
+          secondary={p.secondary}
+          accent={accent}
+        />
+      );
+    case "do_dont":
+      return <DoDontList {...common} items={p.items} primary={p.primary} secondary={p.secondary} />;
+    case "hierarchy":
+      return <HierarchyTree {...common} items={p.items} primary={p.primary} accent={accent} />;
+    case "stat_row":
+      return <StatRow {...common} items={p.items} secondary={p.secondary} />;
+    case "quote_highlight":
+      return (
+        <QuoteHighlight
+          primary={p.primary || scene.narration.slice(0, 150)}
+          secondary={p.label}
+          accent={accent}
+          durationInFrames={durationInFrames}
+        />
+      );
     case "title_statement":
     default:
       return <TitleStatement {...common} primary={p.primary} icon={p.icon} />;
