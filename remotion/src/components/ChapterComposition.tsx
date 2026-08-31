@@ -5,7 +5,6 @@ import { SceneRenderer } from "./SceneRenderer";
 import { AnimatedBackground } from "./AnimatedBackground";
 import { SceneBackdrop } from "./SceneBackdrop";
 import { SceneTransition } from "./SceneTransition";
-import { AiBadge } from "./AiBadge";
 import visualPlansData from "../../public/scene_visuals.json";
 import backdropList from "../../public/backdrops.json";
 
@@ -40,10 +39,9 @@ export const ChapterComposition: React.FC<{ scenes: StoryboardScene[] }> = ({ sc
           );
         })}
       </Series>
-      {/* Outside the Series so it stays put across scene cuts. Subtitles are
-       * no longer burnt in: they ship as a WebVTT track next to the video,
-       * timed from the real ASR segments and toggleable by the viewer. */}
-      <AiBadge />
+      {/* Subtitles are not burnt in: they ship as a WebVTT track next to the
+       * video, timed from the real ASR segments and toggleable by the viewer.
+       * The "AI generated" notice lives in the player UI, not the picture. */}
     </AbsoluteFill>
   );
 };
