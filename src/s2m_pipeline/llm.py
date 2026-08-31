@@ -504,3 +504,85 @@ def generate_scene_visual_plans(
             plan = plan.model_copy(update={"icon": "Info"})
         result[idx] = plan
     return result
+
+
+# --- Comprehension quiz (post-MVP feature, cahier des charges section 14) ---
+
+
+class QuizOption(BaseModel):
+    letter: str
+    text: str
+
+
+class QuizQuestion(BaseModel):
+    question: str
+    options: list[QuizOption]
+    correct_letters: list[str]
+    explanation: str
+
+
+class QuizOutput(BaseModel):
+    questions: list[QuizQuestion]
+
+
+_QUIZ_PROMPT = """Tu es un concepteur pedagogique. A partir du contenu d'un chapitre de \
+formation ci-dessous, redige {count} questions de comprehension pour verifier que \
+l'apprenant a retenu l'essentiel.
+
+Regles :
+- Les questions portent UNIQUEMENT sur ce qui est dit dans le contenu fourni. N'invente
+  jamais un fait, un chiffre ou une regle qui n'y figure pas.
+- Chaque question a 4 propositions, notees A, B, C, D.
+- Certaines questions ont une seule bonne reponse, d'autres en ont plusieurs : varie.
+  Indique toutes les bonnes lettres dans "correct_letters".
+- Les mauvaises propositions doivent rester plausibles (pas d'absurdite evidente), sinon
+  la question ne teste rien.
+- "explanation" rappelle en une phrase pourquoi la ou les bonnes reponses le sont.
+- Redige en francais, avec les accents corrects (é, è, à, ç).
+
+--- TITRE DU CHAPITRE ---
+{title}
+
+--- RESUME ---
+{summary}
+
+--- POINTS CLES ---
+{key_points}
+
+--- CONTENU DETAILLE (transcription) ---
+{transcript}
+"""
+
+
+def generate_quiz(
+    title: str, summary: str, key_points: list[str], transcript: str, count: int = 3
+) -> list[QuizQuestion]:
+    """Write comprehension questions grounded in one chapter's actual content."""
+    client = _get_client()
+    prompt = _QUIZ_PROMPT.format(
+        count=count,
+        title=title,
+        summary=summary,
+        key_points="\n".join(f"- {k}" for k in key_points) or "(aucun)",
+        transcript=transcript[:6000],
+    )
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=QuizOutput,
+        ),
+    )
+    parsed = QuizOutput.model_validate_json(response.text)
+
+    valid: list[QuizQuestion] = []
+    for q in parsed.questions:
+        letters = {o.letter.strip().upper() for o in q.options}
+        correct = [c.strip().upper() for c in q.correct_letters]
+        # Drop questions whose answer key doesn't match the options offered,
+        # rather than shipping a quiz that cannot be scored correctly.
+        if correct and all(c in letters for c in correct):
+            valid.append(q)
+    return valid

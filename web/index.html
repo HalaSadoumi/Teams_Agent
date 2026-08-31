@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cours e-learning — S2M</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      <h1 id="course-title">Cours e-learning</h1>
+      <p id="course-meta" class="muted">Chargement…</p>
+    </div>
+  </div>
+  <div class="progress-wrap" title="Progression">
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+    <span id="progress-label" class="muted">0 %</span>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- Chapter list -->
+  <nav class="sidebar" aria-label="Sommaire des chapitres">
+    <h2>Sommaire</h2>
+    <ol id="chapter-list"></ol>
+  </nav>
+
+  <section class="content">
+    <div class="player-card">
+      <video id="player" controls preload="metadata" playsinline></video>
+      <div class="player-info">
+        <h2 id="chapter-title">—</h2>
+        <p id="chapter-time" class="muted"></p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-panel="panel-summary" role="tab">Résumé</button>
+      <button class="tab" data-panel="panel-points" role="tab">Points clés</button>
+      <button class="tab" data-panel="panel-quiz" role="tab">Quiz</button>
+    </div>
+
+    <div id="panel-summary" class="panel active">
+      <p id="chapter-summary"></p>
+    </div>
+
+    <div id="panel-points" class="panel">
+      <ul id="chapter-points"></ul>
+    </div>
+
+    <div id="panel-quiz" class="panel">
+      <div id="quiz-container"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button id="prev-btn" class="btn">← Chapitre précédent</button>
+      <button id="next-btn" class="btn primary">Chapitre suivant →</button>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
