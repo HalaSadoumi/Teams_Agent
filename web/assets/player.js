@@ -1,19 +1,16 @@
-/* Course player prototype.
+/* Course player.
  *
- * Reads the artefacts the pipeline produces (course_chapters.json, quiz.json)
- * and plays one video file per chapter, so navigation is instant rather than
- * seeking inside a single 80-minute file. Progress is remembered locally so a
- * learner can come back to where they stopped.
+ * Loads one course, selected via ?course=<id>, from data/<id>/. Each chapter
+ * is its own video file so navigation is instant rather than seeking inside a
+ * single long recording. Progress is kept per course in localStorage.
  */
 
-const DATA = {
-  chapters: "data/course_chapters.json",
-  quiz: "data/quiz.json",
-  videoDir: "data/videos",
-};
+const params = new URLSearchParams(location.search);
+const COURSE_ID = params.get("course");
+const BASE = `data/${COURSE_ID}`;
+const STORAGE_KEY = `s2m-course-progress:${COURSE_ID}`;
 
-const STORAGE_KEY = "s2m-course-progress";
-
+let course = null;
 let chapters = [];
 let quizzes = {};
 let current = 0;
@@ -30,13 +27,12 @@ function formatDuration(seconds) {
 function loadProgress() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      completed = new Set(saved.completed || []);
-      current = typeof saved.current === "number" ? saved.current : 0;
-    }
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    completed = new Set(saved.completed || []);
+    current = typeof saved.current === "number" ? saved.current : 0;
   } catch {
-    /* Fresh start if storage is unavailable or corrupt. */
+    /* Fresh start when storage is unavailable or corrupt. */
   }
 }
 
@@ -47,7 +43,7 @@ function saveProgress() {
       JSON.stringify({ completed: [...completed], current })
     );
   } catch {
-    /* Progress is a convenience; ignore private-mode failures. */
+    /* Progress is a convenience, not a requirement. */
   }
 }
 
@@ -95,19 +91,17 @@ function renderQuiz(chapterId) {
     const block = document.createElement("div");
     block.className = "question";
 
-    const optionsHtml = q.options
-      .map(
-        (o) =>
-          `<div class="option" data-letter="${o.letter}">
-             <span class="letter">${o.letter}</span><span>${o.text}</span>
-           </div>`
-      )
-      .join("");
-
     block.innerHTML = `
       <h4>${qi + 1}. ${q.question}</h4>
       <p class="hint">${multiple ? "Plusieurs réponses possibles" : "Une seule réponse"}</p>
-      ${optionsHtml}
+      ${q.options
+        .map(
+          (o) =>
+            `<div class="option" data-letter="${o.letter}">
+               <span class="letter">${o.letter}</span><span>${o.text}</span>
+             </div>`
+        )
+        .join("")}
       <button class="btn small check-btn">Valider</button>
       <div class="feedback"></div>`;
 
@@ -118,7 +112,7 @@ function renderQuiz(chapterId) {
 
     optionEls.forEach((el) => {
       el.addEventListener("click", () => {
-        if (checkBtn.disabled) return; // already answered
+        if (checkBtn.disabled) return;
         const letter = el.dataset.letter;
         if (multiple) {
           if (selected.has(letter)) {
@@ -139,7 +133,6 @@ function renderQuiz(chapterId) {
 
     checkBtn.addEventListener("click", () => {
       if (!selected.size) return;
-
       const correct = new Set(q.correct_letters);
       const isRight =
         selected.size === correct.size && [...selected].every((l) => correct.has(l));
@@ -177,7 +170,7 @@ function selectChapter(index) {
     : '<li class="empty">Aucun point clé.</li>';
 
   const player = document.getElementById("player");
-  player.src = `${DATA.videoDir}/${chapter.id}.mp4`;
+  player.src = `${BASE}/videos/${chapter.id}.mp4`;
   player.load();
 
   renderQuiz(chapter.id);
@@ -193,29 +186,47 @@ function selectChapter(index) {
 /* ---------- init ---------- */
 
 async function init() {
-  try {
-    const [chaptersRes, quizRes] = await Promise.all([
-      fetch(DATA.chapters),
-      fetch(DATA.quiz).catch(() => null),
-    ]);
-
-    chapters = await chaptersRes.json();
-    quizzes = quizRes && quizRes.ok ? await quizRes.json() : {};
-  } catch (err) {
-    document.getElementById("course-meta").textContent =
-      "Impossible de charger les données du cours (lancez un serveur local).";
+  if (!COURSE_ID) {
+    location.replace("index.html");
     return;
   }
+
+  try {
+    const [coursesRes, chaptersRes, quizRes] = await Promise.all([
+      fetch("data/courses.json"),
+      fetch(`${BASE}/course_chapters.json`),
+      fetch(`${BASE}/quiz.json`).catch(() => null),
+    ]);
+
+    const catalog = await coursesRes.json();
+    course = (catalog.courses || []).find((c) => c.id === COURSE_ID) || null;
+    chapters = await chaptersRes.json();
+    quizzes = quizRes && quizRes.ok ? await quizRes.json() : {};
+  } catch {
+    document.getElementById("course-meta").textContent =
+      "Impossible de charger ce cours.";
+    return;
+  }
+
+  document.title = course ? `${course.title} — S2M` : "Cours — S2M";
+  document.getElementById("course-title").textContent = course ? course.title : "Cours";
 
   const totalSeconds = chapters.reduce((acc, c) => acc + c.duration, 0);
   document.getElementById("course-meta").textContent =
     `${chapters.length} chapitres · ${Math.round(totalSeconds / 60)} minutes`;
 
+  // The reading tab only appears when a support document was exported.
+  if (course && course.pdf) {
+    const url = `${BASE}/${course.pdf}`;
+    document.getElementById("tab-read").hidden = false;
+    document.getElementById("pdf-frame").src = url;
+    document.getElementById("pdf-download").href = url;
+  }
+
   loadProgress();
   selectChapter(current);
   renderProgress();
 
-  // Mark a chapter done once most of it has been watched.
   const player = document.getElementById("player");
   player.addEventListener("timeupdate", () => {
     if (!player.duration) return;

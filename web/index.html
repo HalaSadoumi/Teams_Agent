@@ -3,65 +3,39 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cours e-learning — S2M</title>
-<link rel="stylesheet" href="style.css" />
+<title>Catalogue des formations — S2M</title>
+<link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
+
 <header class="topbar">
   <div class="brand">
-    <span class="dot"></span>
+    <img src="assets/s2m-logo.png" alt="S2M" />
+    <span class="divider"></span>
     <div>
-      <h1 id="course-title">Cours e-learning</h1>
-      <p id="course-meta" class="muted">Chargement…</p>
+      <h1>Formations en ligne</h1>
+      <p>Espace d'apprentissage interne</p>
     </div>
-  </div>
-  <div class="progress-wrap" title="Progression">
-    <div class="progress-bar"><div id="progress-fill"></div></div>
-    <span id="progress-label" class="muted">0 %</span>
   </div>
 </header>
 
-<main class="layout">
-  <!-- Chapter list -->
-  <nav class="sidebar" aria-label="Sommaire des chapitres">
-    <h2>Sommaire</h2>
-    <ol id="chapter-list"></ol>
-  </nav>
+<section class="hero">
+  <h2>Catalogue des formations</h2>
+  <p>
+    Retrouvez les sessions de formation internes, transformées en cours structurés :
+    chapitres navigables, points clés, quiz de compréhension et support à télécharger.
+  </p>
+  <div class="accent-rule"></div>
+</section>
 
-  <section class="content">
-    <div class="player-card">
-      <video id="player" controls preload="metadata" playsinline></video>
-      <div class="player-info">
-        <h2 id="chapter-title">—</h2>
-        <p id="chapter-time" class="muted"></p>
-      </div>
-    </div>
-
-    <div class="tabs" role="tablist">
-      <button class="tab active" data-panel="panel-summary" role="tab">Résumé</button>
-      <button class="tab" data-panel="panel-points" role="tab">Points clés</button>
-      <button class="tab" data-panel="panel-quiz" role="tab">Quiz</button>
-    </div>
-
-    <div id="panel-summary" class="panel active">
-      <p id="chapter-summary"></p>
-    </div>
-
-    <div id="panel-points" class="panel">
-      <ul id="chapter-points"></ul>
-    </div>
-
-    <div id="panel-quiz" class="panel">
-      <div id="quiz-container"></div>
-    </div>
-
-    <div class="nav-buttons">
-      <button id="prev-btn" class="btn">← Chapitre précédent</button>
-      <button id="next-btn" class="btn primary">Chapitre suivant →</button>
-    </div>
-  </section>
+<main class="catalog" id="catalog">
+  <p class="muted">Chargement du catalogue…</p>
 </main>
 
-<script src="app.js"></script>
+<footer class="site">
+  S2M Casablanca — Plateforme de formation interne
+</footer>
+
+<script src="assets/catalog.js"></script>
 </body>
 </html>
