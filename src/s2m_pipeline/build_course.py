@@ -251,7 +251,18 @@ def run_render(paths: Paths) -> None:
         print(f"  [{i}/{len(chapters)}] {chapter_id} — rendering...")
         composition_id = chapter_id.replace("_", "-")
         result = subprocess.run(
-            [npx, "remotion", "render", "src/index.ts", composition_id, str(target), "--log=error"],
+            [
+                npx, "remotion", "render", "src/index.ts", composition_id, str(target),
+                "--log=error",
+                # The generated backdrops are blurred and composited, so a
+                # frame can take well over Remotion's 30s default on a busy
+                # CPU-only machine; a long per-frame budget avoids losing a
+                # whole chapter to one slow frame.
+                "--timeout=180000",
+                # Leave a core free so the machine stays usable during the
+                # multi-hour batch.
+                "--concurrency=50%",
+            ],
             cwd=REMOTION_DIR,
             capture_output=True,
             text=True,
@@ -306,9 +317,14 @@ def main() -> None:
     start_index = STAGES.index(args.from_stage) if args.from_stage else 0
 
     def should_run(stage: str, produced: Path) -> bool:
-        if STAGES.index(stage) < start_index:
+        index = STAGES.index(stage)
+        if index < start_index:
             return False
-        if STAGES.index(stage) > start_index and produced.exists():
+        # An explicit --from means "redo this stage", even though its output
+        # is already on disk; every other stage is skipped once produced.
+        if args.from_stage is not None and index == start_index:
+            return True
+        if produced.exists():
             print(f"  (already done — {produced.name})")
             return False
         return True
