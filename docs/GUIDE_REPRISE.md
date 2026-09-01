@@ -32,6 +32,20 @@ Trois règles en découlent, et toute modification devrait les respecter :
 
 ## 2. Produire un cours
 
+Une fois seulement, après avoir créé l'environnement virtuel :
+
+```bash
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\pip install -e .
+```
+
+La seconde ligne installe le paquet en mode édition. Sans elle, toutes les
+commandes ci-dessous échouent avec `ModuleNotFoundError: No module named
+'s2m_pipeline'` — le code vit dans `src/`, qui n'est pas sur le chemin
+d'import par défaut.
+
+Ensuite, pour produire un cours :
+
 ```bash
 python -m s2m_pipeline.build_course --video "chemin/vers/enregistrement.mp4"
 ```
@@ -157,6 +171,10 @@ sous-titres, lancez-les avant de relancer un rendu de plusieurs heures.
 ---
 
 ## 5. Points de vigilance
+
+**Les commandes `npx remotion` se lancent depuis `remotion/`,** jamais depuis
+la racine : c'est là que se trouvent `package.json` et `node_modules`. Depuis
+la racine, npm répond `could not determine executable to run`.
 
 **Le rendu ne doit pas être modifié pendant qu'il tourne.** Chaque chapitre
 est rendu par un appel séparé qui reconstruit le paquet JavaScript : modifier

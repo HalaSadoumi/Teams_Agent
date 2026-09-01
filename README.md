@@ -58,7 +58,14 @@ ni réseau, ni modèle, ni clé d'API.
 ```bash
 python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\pip install -e .
 ```
+
+La dernière ligne installe le paquet en mode édition. Elle est **indispensable** :
+le code vit dans `src/`, et sans elle toutes les commandes `python -m s2m_pipeline...`
+échouent avec `ModuleNotFoundError: No module named 's2m_pipeline'`. Le mode
+édition signifie que vos modifications du code sont prises en compte
+immédiatement, sans réinstaller.
 
 `sentence-transformers` dépend de PyTorch ; sur Windows, l'installation par
 défaut peut tirer une version CUDA volumineuse même sans GPU. Pour une

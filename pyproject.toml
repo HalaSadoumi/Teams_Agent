@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s2m-pipeline"
+version = "1.0.0"
+description = "Transformation d'enregistrements de formation en cours e-learning structurés"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+# La liste des dépendances reste dans requirements.txt, qui sert de source
+# unique : rien à tenir à jour en double.
+dependencies = { file = ["requirements.txt"] }
+
+# Disposition « src » : le code vit dans src/s2m_pipeline. Sans cette
+# déclaration et sans installation, `python -m s2m_pipeline.build_course`
+# echoue avec ModuleNotFoundError, parce que src/ n'est pas sur sys.path.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Evite d'avoir à définir PYTHONPATH à la main pour lancer les tests.
+pythonpath = ["src"]
