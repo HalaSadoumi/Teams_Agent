@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
+import { KeyPoints } from "../components/KeyPoints";
 
 /** An editorial pull-quote: a large statement between quote marks with a
  * colour rule beside it. Deliberately typographic and full-bleed, so a run of
@@ -8,15 +9,17 @@ import { COLORS, FONT } from "../theme";
 export const QuoteHighlight: React.FC<{
   primary: string;
   secondary: string;
+  items?: string[];
   accent: string;
   durationInFrames: number;
-}> = ({ primary, secondary, accent }) => {
+}> = ({ primary, secondary, items = [], accent, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame: frame - 3, fps, config: { damping: 13 } });
   const opacity = interpolate(frame, [0, 14], [0, 1], { extrapolateRight: "clamp" });
   const ruleHeight = interpolate(frame, [6, 30], [0, 1], { extrapolateRight: "clamp" });
   const drift = Math.sin(frame / 30) * 4;
+  const hasPoints = items.filter((t) => t && t.trim()).length > 0;
 
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", padding: "0 12%" }}>
@@ -49,7 +52,7 @@ export const QuoteHighlight: React.FC<{
           <div
             style={{
               fontFamily: FONT,
-              fontSize: 52,
+              fontSize: hasPoints ? 44 : 52,
               fontWeight: 700,
               lineHeight: 1.35,
               color: COLORS.text,
@@ -75,6 +78,7 @@ export const QuoteHighlight: React.FC<{
               {secondary}
             </div>
           )}
+          <KeyPoints items={items} accent={accent} durationInFrames={durationInFrames} />
         </div>
       </div>
     </AbsoluteFill>

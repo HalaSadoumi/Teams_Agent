@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3, COLORS.accent];
 
@@ -16,6 +16,9 @@ export const TimelineScene: React.FC<{ label?: string; items: string[]; duration
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames;
   const steps = items.slice(0, 4);
+  // La boîte s'agrandit avec le libellé : les étapes ne tiennent plus toujours
+  // sur une ligne depuis que le planificateur écrit des formulations completes.
+  const boxHeight = (t: string) => 62 + 30 * Math.min(2, Math.floor(t.length / 19));
   const labelOpacity = interpolate(p, [0.02, 0.12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   const trackW = 1400;
@@ -58,18 +61,26 @@ export const TimelineScene: React.FC<{ label?: string; items: string[]; duration
                   {i + 1}
                 </text>
                 <g transform={`translate(${x} ${above ? -70 : 70})`}>
-                  <rect x={-150} y={above ? -66 : 4} width={300} height={62} rx={14} fill="#0A0E1A" stroke={color} strokeWidth={3} opacity={s} />
-                  <text
-                    y={above ? -26 : 44}
-                    textAnchor="middle"
-                    fill={COLORS.text}
-                    fontFamily={FONT}
+                  <rect
+                    x={-150}
+                    y={above ? -40 - boxHeight(item) : 4}
+                    width={300}
+                    height={boxHeight(item)}
+                    rx={14}
+                    fill="#0A0E1A"
+                    stroke={color}
+                    strokeWidth={3}
+                    opacity={s}
+                  />
+                  <WrappedText
+                    text={item}
+                    y={above ? -40 - boxHeight(item) / 2 : 4 + boxHeight(item) / 2}
+                    maxWidth={272}
                     fontSize={26}
                     fontWeight={700}
                     opacity={s}
-                  >
-                    {item}
-                  </text>
+                    maxLines={3}
+                  />
                 </g>
               </g>
             );

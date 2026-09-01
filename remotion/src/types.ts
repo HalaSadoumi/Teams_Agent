@@ -25,6 +25,10 @@ export interface VisualPlan {
   items: string[];
   primary: string;
   secondary: string;
+  /** One sentence stating what the scene teaches, shown as a lower third on
+   * every archetype. Optional: plans generated before this field existed
+   * simply render without it. */
+  takeaway?: string;
   /** Lucide icon name, validated during planning against the installed set. */
   icon: string;
   /** English description used to generate this scene's backdrop image. */

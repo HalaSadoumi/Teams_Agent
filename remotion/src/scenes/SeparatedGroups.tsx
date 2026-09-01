@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel, ServerStack } from "../illustrations/primitives";
+import { SceneLabel, ServerStack, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3];
 
@@ -36,9 +36,7 @@ export const SeparatedGroups: React.FC<{
               <g key={i} opacity={s} transform={`translate(${x} 0) scale(${s})`}>
                 <rect x={-230} y={-215} width={460} height={430} rx={22} fill={`${color}14`} stroke={color} strokeWidth={4} strokeDasharray="16 10" />
                 <ServerStack x={0} y={-30} color={color} />
-                <text y={185} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={30} fontWeight={800}>
-                  {zone}
-                </text>
+                <WrappedText text={zone} y={185} maxWidth={420} fontSize={30} fontWeight={800} maxLines={3} />
               </g>
             );
           })}

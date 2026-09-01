@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 /** A closed loop: steps arranged around a circle with arcs running between
  * them and a rotating highlight. Reads as "this repeats", which a straight
@@ -79,24 +79,20 @@ export const CycleDiagram: React.FC<{
                 >
                   {i + 1}
                 </text>
-                <text
-                  y={Math.sin(a) > 0.2 ? 118 : -84}
-                  textAnchor="middle"
-                  fill={COLORS.text}
-                  fontFamily={FONT}
+                <WrappedText
+                  text={item}
+                  y={Math.sin(a) > 0.2 ? 122 : -88}
+                  maxWidth={300}
                   fontSize={26}
                   fontWeight={700}
-                >
-                  {item}
-                </text>
+                  maxLines={2}
+                />
               </g>
             );
           })}
 
           {primary && (
-            <text y={10} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={34} fontWeight={800}>
-              {primary}
-            </text>
+            <WrappedText text={primary} y={10} maxWidth={300} fontSize={34} fontWeight={800} maxLines={2} />
           )}
         </g>
       </svg>

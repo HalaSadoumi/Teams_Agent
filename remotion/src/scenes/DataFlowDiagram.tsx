@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { AnimatedArrow, DeviceBox, SceneLabel, ServerStack } from "../illustrations/primitives";
+import { AnimatedArrow, DeviceBox, SceneLabel, ServerStack, WrappedText } from "../illustrations/primitives";
 
 /** Diagram: several sources on the left, arrows drawing themselves toward a
  * central platform, then a result appearing on the right. The generic
@@ -62,9 +62,7 @@ export const DataFlowDiagram: React.FC<{
               <AnimatedArrow from={[130, 0]} to={[480, 0]} progress={resultProgress} color={COLORS.accent3} />
               <g opacity={resultProgress} transform={`translate(660 0) scale(${resultProgress})`}>
                 <rect x={-150} y={-72} width={300} height={144} rx={16} fill={`${COLORS.accent3}2E`} stroke={COLORS.accent3} strokeWidth={4} />
-                <text y={12} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={30} fontWeight={800}>
-                  {result}
-                </text>
+                <WrappedText text={result} y={12} maxWidth={272} fontSize={30} fontWeight={800} maxLines={3} />
               </g>
             </>
           )}

@@ -408,6 +408,11 @@ class SceneVisualPlan(BaseModel):
     items: list[str]
     primary: str
     secondary: str
+    # One full sentence stating what the viewer should retain from this scene.
+    # Rendered on every archetype, so the screen explains the point being made
+    # rather than only naming it. Defaulted so plans written before this field
+    # existed still validate.
+    takeaway: str = ""
     icon: str
     image_prompt: str
 
@@ -418,7 +423,14 @@ class SceneVisualPlanOutput(BaseModel):
 
 _SCENE_VISUAL_PROMPT = """Tu es un directeur artistique de video pedagogique. Pour chaque \
 scene de narration ci-dessous (texte reel, deja fixe - ne le reecris jamais), choisis le \
-schema anime qui ILLUSTRE ce qui est dit, et fournis les textes courts a afficher dedans.
+schema anime qui ILLUSTRE ce qui est dit, et redige les textes affiches a l'ecran.
+
+REGLE ABSOLUE : l'ecran doit EXPLIQUER le propos, pas seulement le nommer. Un apprenant \
+qui regarde la scene SANS LE SON doit comprendre l'essentiel de ce qui est dit. Un ecran \
+qui n'affiche qu'un titre est un echec : il faut y faire figurer les elements concrets \
+enonces dans la narration (les termes, les etapes, les chiffres, les exemples, les \
+conditions). Ne resume pas a l'extreme et n'invente rien : reprends ce qui est reellement \
+dit, dans les mots de l'intervenant quand c'est possible.
 
 Archetypes disponibles (choisis l'identifiant exact) :
 {archetypes}
@@ -426,16 +438,23 @@ Archetypes disponibles (choisis l'identifiant exact) :
 Pour chaque scene, reponds avec :
 - "index" : le meme numero que la scene d'entree
 - "archetype" : un identifiant EXACT de la liste ci-dessus
-- "label" : titre court de la scene (3-6 mots), affiche en haut
-- "items" : les elements nommes du schema, 2 a 4 libelles TRES courts (1-3 mots chacun).
-  Selon l'archetype : les fondements (pillars), les sources (data_flow), les couches
-  (concentric_layers), les deux cotes (comparison), les points a cocher (checklist), les
-  etapes (timeline), les roles (permission_matrix), les groupes (separated_groups),
-  les etapes du cycle (cycle), les quatre cas (quadrant_matrix), les elements composants
-  (hierarchy), les chiffres au format "61% messagerie" (stat_row), et pour do_dont : en
-  alternance une bonne pratique puis une erreur, une bonne pratique puis une erreur.
-  Pour actor_action_target, stat_reveal, state_change, quote_highlight et title_statement,
-  mets une liste vide.
+- "label" : titre de la scene (2 a 6 mots), affiche en haut
+- "items" : TOUJOURS 2 a 4 elements, JAMAIS une liste vide, quel que soit l'archetype.
+  Chacun fait 2 a 6 mots et doit porter du sens : "Verifier l'expediteur" et non
+  "Expediteur", "Acces limite aux habilites" et non "Acces". Selon l'archetype :
+  les fondements (pillars), les sources (data_flow), les couches (concentric_layers),
+  les deux cotes (comparison), les points a cocher (checklist), les etapes (timeline),
+  les roles et leurs droits (permission_matrix), les groupes (separated_groups), les
+  etapes du cycle (cycle), les quatre cas (quadrant_matrix), les elements composants
+  (hierarchy), les chiffres au format "61% messagerie" (stat_row), et pour do_dont :
+  en alternance une bonne pratique puis une erreur, une bonne pratique puis une erreur.
+  Pour les cinq archetypes suivants, les items developpent le propos central :
+  * title_statement : 2 a 4 points qui detaillent ou justifient le message affiche
+  * stat_reveal     : 2 a 4 elements de contexte du chiffre (source, perimetre, effet)
+  * state_change    : 2 a 4 etapes ou consequences du passage d'un etat a l'autre
+  * actor_action_target : 2 a 4 precisions sur le mecanisme (comment, par quel moyen,
+    avec quel effet)
+  * quote_highlight : 2 a 4 points qui explicitent la phrase mise en exergue
 - "primary" : selon l'archetype - l'etape centrale (data_flow), le chiffre (stat_reveal,
   ex. "61%"), le message principal (title_statement), l'acteur qui agit
   (actor_action_target), l'etat final (state_change), l'element central
@@ -444,18 +463,23 @@ Pour chaque scene, reponds avec :
   (stat_reveal), la synthese (pillars), la cible qui subit l'action (actor_action_target),
   la precision sous le schema (state_change, permission_matrix, separated_groups),
   sinon chaine vide
+- "takeaway" : TOUJOURS rempli. Une phrase complete de 8 a 16 mots enoncant ce que
+  l'apprenant doit retenir de cette scene precise. C'est une explication, pas un titre :
+  "Un mot de passe reutilise compromet tous les comptes qui l'emploient" et non
+  "Mots de passe". Elle doit decouler de ce qui est dit dans CETTE scene.
 - "icon" : une icone illustrant le concept principal de la scene, choisie EXACTEMENT dans
   cette liste : {icons}
 - "image_prompt" : une description visuelle EN ANGLAIS, en 6 a 12 mots, de l'illustration
-  d'ambiance a generer en fond de scene. Decris une situation ou un objet concret lie au
-  propos (ex. "employee reviewing documents at office desk"). N'y mets JAMAIS de texte,
+  d'ambiance a generer en fond de scene. Elle reste un simple decor discret derriere le
+  schema : ne lui confie aucune information. Decris une situation ou un objet concret lie
+  au propos (ex. "employee reviewing documents at office desk"). N'y mets JAMAIS de texte,
   de mot ecrit, de chiffre, de logo ni de marque.
 
 Choisis l'archetype d'apres le SENS de la narration, pas au hasard, et varie les archetypes \
-d'une scene a l'autre quand le contenu s'y prete. Si aucun schema ne convient vraiment, \
-utilise "title_statement".
+d'une scene a l'autre quand le contenu s'y prete. N'utilise "title_statement" qu'en dernier \
+recours, quand aucun schema ne convient vraiment - et meme dans ce cas, remplis ses items.
 
-Tous les textes affiches doivent etre en francais, courts, et utiliser les accents corrects \
+Tous les textes affiches doivent etre en francais et utiliser les accents corrects \
 (é, è, à, ç) - sauf "image_prompt" qui est en anglais. Reponds pour CHAQUE scene, sans en \
 omettre aucune.
 
@@ -467,10 +491,19 @@ omettre aucune.
 """
 
 
-def generate_scene_visual_plans(
+def _clip_on_word(text: str, limit: int = 90) -> str:
+    """Cut at a word boundary. Slicing on a character count put sentences like
+    "... contre tout acces au debut de l'" on screen, mid-word."""
+    clean = " ".join(text.split())
+    if len(clean) <= limit:
+        return clean
+    cut = clean[:limit].rsplit(" ", 1)[0].rstrip(" ,;:'’-")
+    return f"{cut}…"
+
+
+def _request_scene_plans(
     indexed_narrations: list[tuple[int, str]], ocr_text: str
 ) -> dict[int, SceneVisualPlan]:
-    """Map each narration scene to an animated archetype + its text slots."""
     client = _get_client()
     scenes_text = "\n".join(f"[{i}] {text}" for i, text in indexed_narrations)
     archetypes = "\n".join(f"- {k} : {v}" for k, v in SCENE_ARCHETYPES.items())
@@ -490,21 +523,43 @@ def generate_scene_visual_plans(
         ),
     )
     parsed = SceneVisualPlanOutput.model_validate_json(response.text)
-    by_index = {p.index: p for p in parsed.plans}
+    return {p.index: p for p in parsed.plans}
+
+
+def generate_scene_visual_plans(
+    indexed_narrations: list[tuple[int, str]], ocr_text: str
+) -> dict[int, SceneVisualPlan]:
+    """Map each narration scene to an animated archetype + its text slots."""
+    by_index = _request_scene_plans(indexed_narrations, ocr_text)
+
+    def unusable(idx: int) -> bool:
+        plan = by_index.get(idx)
+        return plan is None or plan.archetype not in SCENE_ARCHETYPES
+
+    # Asked for a whole chapter at once, the model occasionally omits a scene
+    # or two. Those used to land straight on the bare fallback card, which is
+    # visible in the finished video; ask again for just the missing ones.
+    missing = [(i, t) for i, t in indexed_narrations if unusable(i)]
+    if missing:
+        for idx, plan in _request_scene_plans(missing, ocr_text).items():
+            if plan.archetype in SCENE_ARCHETYPES:
+                by_index[idx] = plan
 
     result: dict[int, SceneVisualPlan] = {}
     for idx, text in indexed_narrations:
         plan = by_index.get(idx)
         if plan is None or plan.archetype not in SCENE_ARCHETYPES:
-            # Safe fallback: show the narration as a typographic statement
-            # rather than dropping the scene or guessing a wrong diagram.
+            # Last resort after the retry: a quote card carrying the speaker's
+            # own words, cut at a word boundary so it reads as a deliberate
+            # pull-quote rather than a truncated sentence.
             plan = SceneVisualPlan(
                 index=idx,
-                archetype="title_statement",
+                archetype="quote_highlight",
                 label="",
                 items=[],
-                primary=text[:70],
+                primary=_clip_on_word(text),
                 secondary="",
+                takeaway="",
                 icon="Info",
                 image_prompt="abstract professional workspace atmosphere",
             )

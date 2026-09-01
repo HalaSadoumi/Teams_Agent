@@ -81,9 +81,7 @@ export const DeviceBox: React.FC<{
     {/* stand */}
     <rect x={-26} y={h / 2} width={52} height={9} rx={4} fill={color} opacity={0.75} />
     {label && (
-      <text x={0} y={h / 2 + 42} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={22} fontWeight={700}>
-        {label}
-      </text>
+      <WrappedText text={label} y={h / 2 + 42} maxWidth={Math.max(w + 120, 300)} fontSize={22} maxLines={3} />
     )}
   </g>
 );
@@ -104,11 +102,7 @@ export const ServerStack: React.FC<{
         <rect x={-20} y={-51 + i * 46} width={62} height={7} rx={3.5} fill={color} opacity={0.45} />
       </g>
     ))}
-    {label && (
-      <text x={0} y={112} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={22} fontWeight={700}>
-        {label}
-      </text>
-    )}
+    {label && <WrappedText text={label} y={112} maxWidth={300} fontSize={22} maxLines={3} />}
   </g>
 );
 
@@ -252,3 +246,99 @@ export const SceneLabel: React.FC<{ text: string; opacity?: number; y?: number }
     {text}
   </div>
 );
+
+/** SVG text that wraps to its slot instead of running past it.
+ *
+ * Every diagram places its labels in fixed-width boxes, and SVG `<text>` does
+ * not wrap: once the planner started producing meaningful phrases rather than
+ * single words, labels overlapped their neighbours or were hard-truncated.
+ * This lays the text out for the space actually available — wrapping first,
+ * then shrinking the type, and only truncating when even the smallest size
+ * cannot fit — so a diagram stays readable whatever the planner writes.
+ *
+ * Widths are estimated from the character count rather than measured: the
+ * renderer must stay deterministic, so two runs of the same scene produce
+ * byte-identical frames. */
+const AVG_CHAR_WIDTH_RATIO = 0.55;
+
+function wrapLines(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxChars || !current) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+export const WrappedText: React.FC<{
+  text: string;
+  x?: number;
+  y: number;
+  maxWidth: number;
+  fontSize?: number;
+  minFontSize?: number;
+  maxLines?: number;
+  fontWeight?: number;
+  fill?: string;
+  opacity?: number;
+  anchor?: "start" | "middle" | "end";
+  transform?: string;
+}> = ({
+  text,
+  x = 0,
+  y,
+  maxWidth,
+  fontSize = 30,
+  minFontSize,
+  maxLines = 2,
+  fontWeight = 700,
+  fill = COLORS.text,
+  opacity = 1,
+  anchor = "middle",
+  transform,
+}) => {
+  if (!text || !text.trim()) return null;
+  const floor = minFontSize ?? Math.max(14, Math.round(fontSize * 0.62));
+
+  let size = fontSize;
+  let lines = wrapLines(text, Math.max(4, Math.floor(maxWidth / (fontSize * AVG_CHAR_WIDTH_RATIO))));
+  while (lines.length > maxLines && size > floor) {
+    size -= 2;
+    lines = wrapLines(text, Math.max(4, Math.floor(maxWidth / (size * AVG_CHAR_WIDTH_RATIO))));
+  }
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    lines[maxLines - 1] = lines[maxLines - 1].replace(/\s+\S*$/, "") + "…";
+  }
+
+  const lineHeight = size * 1.16;
+  const firstBaseline = y - ((lines.length - 1) * lineHeight) / 2;
+
+  return (
+    <text
+      x={x}
+      y={firstBaseline}
+      textAnchor={anchor}
+      fill={fill}
+      fontFamily={FONT}
+      fontSize={size}
+      fontWeight={fontWeight}
+      opacity={opacity}
+      transform={transform}
+    >
+      {lines.map((line, i) => (
+        <tspan key={i} x={x} dy={i === 0 ? 0 : lineHeight}>
+          {line}
+        </tspan>
+      ))}
+    </text>
+  );
+};

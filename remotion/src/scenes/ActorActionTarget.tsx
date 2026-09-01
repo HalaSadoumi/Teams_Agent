@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
+import { KeyPoints } from "../components/KeyPoints";
 import { AnimatedArrow, DeviceBox, Envelope, Figure, SceneLabel } from "../illustrations/primitives";
 
 /** Character scenario: an attacker sends a malicious email, it travels to a
@@ -11,8 +12,10 @@ export const ActorActionTarget: React.FC<{
   label?: string;
   primary: string;
   secondary: string;
+  items?: string[];
+  accent?: string;
   durationInFrames: number;
-}> = ({ label, primary, secondary, durationInFrames }) => {
+}> = ({ label, primary, secondary, items = [], accent = COLORS.accent, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames; // 0..1 through the scene
@@ -30,12 +33,13 @@ export const ActorActionTarget: React.FC<{
   const impact = interpolate(p, [0.62, 0.74], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const alertPulse = 1 + Math.sin(frame / 5) * 0.08 * impact;
   const labelOpacity = interpolate(p, [0.02, 0.12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const hasPoints = items.filter((t) => t && t.trim()).length > 0;
 
   return (
     <AbsoluteFill>
       {label && <SceneLabel text={label} opacity={labelOpacity} />}
       <svg width="100%" height="100%" viewBox="-960 -540 1920 1080">
-        <g transform="translate(0 40)">
+        <g transform={hasPoints ? "translate(-330 20) scale(0.76)" : "translate(0 40)"}>
           <Figure x={-470} y={0} scale={1.15} variant="attacker" opacity={attackerIn} label={primary || "Source"} />
 
           <AnimatedArrow
@@ -74,6 +78,7 @@ export const ActorActionTarget: React.FC<{
           )}
         </g>
       </svg>
+      <KeyPoints items={items} accent={accent} durationInFrames={durationInFrames} variant="panel" />
     </AbsoluteFill>
   );
 };

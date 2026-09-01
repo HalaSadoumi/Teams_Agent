@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent3, COLORS.accent2, COLORS.accent, COLORS.accent2];
 
@@ -17,6 +17,9 @@ export const ConcentricLayers: React.FC<{
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames;
   const layers = items.slice(0, 4);
+  // Pastille de largeur variable : un libellé de plusieurs mots ne tient pas
+  // dans une pastille de largeur fixe.
+  const chipWidth = (t: string) => Math.min(560, Math.max(236, t.length * 14 + 44));
   const labelOpacity = interpolate(p, [0.02, 0.12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const corePulse = 1 + Math.sin(frame / 11) * 0.05;
 
@@ -46,34 +49,29 @@ export const ConcentricLayers: React.FC<{
                     opacity={0.85}
                   />
                   <rect
-                    x={-118}
+                    x={-chipWidth(item) / 2}
                     y={-radius * s - 22}
-                    width={236}
+                    width={chipWidth(item)}
                     height={44}
                     rx={22}
                     fill="#0A0E1A"
                     stroke={color}
                     strokeWidth={3}
                   />
-                  <text
-                    x={0}
-                    y={-radius * s + 8}
-                    textAnchor="middle"
-                    fill={COLORS.text}
-                    fontFamily={FONT}
+                  <WrappedText
+                    text={item}
+                    y={-radius * s}
+                    maxWidth={chipWidth(item) - 26}
                     fontSize={24}
                     fontWeight={700}
-                  >
-                    {item}
-                  </text>
+                    maxLines={1}
+                  />
                 </g>
               );
             })}
           <g transform={`scale(${corePulse})`}>
             <circle r={94} fill={`${COLORS.accent}33`} stroke={COLORS.accent} strokeWidth={5} />
-            <text y={10} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={28} fontWeight={800}>
-              {primary || "Coeur"}
-            </text>
+            <WrappedText text={primary || "Coeur"} y={10} maxWidth={168} fontSize={28} fontWeight={800} maxLines={2} />
           </g>
         </g>
       </svg>

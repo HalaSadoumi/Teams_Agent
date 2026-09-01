@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { Figure, SceneLabel } from "../illustrations/primitives";
+import { Figure, SceneLabel, WrappedText } from "../illustrations/primitives";
 
 /** Two opposed situations side by side — bad practice (left, red, cross)
  * vs good practice (right, blue, check). Slides in from both edges. */
@@ -39,9 +39,7 @@ export const ComparisonScene: React.FC<{ label?: string; items: string[]; durati
           <path d="M -14 -14 L 14 14 M 14 -14 L -14 14" stroke="#0A0E1A" strokeWidth={7} strokeLinecap="round" />
         )}
       </g>
-      <text x={0} y={196} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={30} fontWeight={800}>
-        {text}
-      </text>
+      <WrappedText text={text} y={200} maxWidth={548} fontSize={30} fontWeight={800} maxLines={3} />
     </g>
   );
 

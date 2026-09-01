@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 /** A root box with branches drawing down to its children. Expresses
  * containment or hierarchy ("X comprises A, B, C"), which a flat list flattens
@@ -34,9 +34,7 @@ export const HierarchyTree: React.FC<{
           {/* root */}
           <g opacity={rootIn} transform={`scale(${rootIn})`}>
             <rect x={-260} y={-165} width={520} height={104} rx={16} fill={`${accent}26`} stroke={accent} strokeWidth={4} />
-            <text y={-100} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={32} fontWeight={800}>
-              {primary || "Ensemble"}
-            </text>
+            <WrappedText text={primary || "Ensemble"} y={-105} maxWidth={470} fontSize={32} fontWeight={800} maxLines={2} />
           </g>
 
           {/* trunk */}
@@ -53,9 +51,7 @@ export const HierarchyTree: React.FC<{
                 <line x1={x} y1={19} x2={x} y2={19 + (childY - 19 - 62) * horiz} stroke={accent} strokeWidth={4} opacity={horiz} />
                 <g opacity={s} transform={`translate(${x} ${childY}) scale(${s})`}>
                   <rect x={-185} y={-62} width={370} height={124} rx={14} fill="rgba(255,255,255,0.06)" stroke={accent} strokeWidth={3} />
-                  <text y={10} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={27} fontWeight={700}>
-                    {child}
-                  </text>
+                  <WrappedText text={child} y={10} maxWidth={336} fontSize={27} fontWeight={700} maxLines={3} />
                 </g>
               </g>
             );

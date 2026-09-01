@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3, "#34D399"];
 
@@ -78,18 +78,29 @@ export const StatRow: React.FC<{
                   {shown}
                 </text>
                 {caption && (
-                  <text y={130} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={25} fontWeight={600}>
-                    {caption.length > 22 ? caption.slice(0, 21) + "…" : caption}
-                  </text>
+                  <WrappedText
+                    text={caption}
+                    y={138}
+                    maxWidth={(spacing || 460) - 30}
+                    fontSize={25}
+                    fontWeight={600}
+                    maxLines={3}
+                  />
                 )}
               </g>
             );
           })}
 
           {secondary && (
-            <text y={230} textAnchor="middle" fill={COLORS.textDim} fontFamily={FONT} fontSize={27} fontWeight={600}>
-              {secondary}
-            </text>
+            <WrappedText
+              text={secondary}
+              y={244}
+              maxWidth={1500}
+              fontSize={27}
+              fontWeight={600}
+              fill={COLORS.textDim}
+              maxLines={2}
+            />
           )}
         </g>
       </svg>

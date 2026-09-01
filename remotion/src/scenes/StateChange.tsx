@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
+import { KeyPoints } from "../components/KeyPoints";
 import { LockShape, SceneLabel } from "../illustrations/primitives";
 
 /** Data getting secured: scattered document tiles converge and a padlock
@@ -9,8 +10,10 @@ export const StateChange: React.FC<{
   label?: string;
   primary: string;
   secondary: string;
+  items?: string[];
+  accent?: string;
   durationInFrames: number;
-}> = ({ label, primary, secondary, durationInFrames }) => {
+}> = ({ label, primary, secondary, items = [], accent = COLORS.accent, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = frame / durationInFrames;
@@ -21,6 +24,7 @@ export const StateChange: React.FC<{
   const lockIn = spring({ frame: frame - durationInFrames * 0.45, fps, config: { damping: 12 } });
   const closed = interpolate(p, [0.6, 0.72], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const glow = 0.35 + Math.sin(frame / 10) * 0.15 * closed;
+  const hasPoints = items.filter((t) => t && t.trim()).length > 0;
 
   const docs = [
     { x: -430, y: -110 },
@@ -33,7 +37,7 @@ export const StateChange: React.FC<{
     <AbsoluteFill>
       {label && <SceneLabel text={label} opacity={labelOpacity} />}
       <svg width="100%" height="100%" viewBox="-960 -540 1920 1080">
-        <g transform="translate(0 80)">
+        <g transform={hasPoints ? "translate(-440 20) scale(0.78)" : "translate(0 80)"}>
           {closed > 0 && <circle r={250} fill={COLORS.accent} opacity={glow * 0.16} />}
 
           {docs.map((d, i) => {
@@ -66,6 +70,7 @@ export const StateChange: React.FC<{
           )}
         </g>
       </svg>
+      <KeyPoints items={items} accent={accent} durationInFrames={durationInFrames} variant="panel" />
     </AbsoluteFill>
   );
 };

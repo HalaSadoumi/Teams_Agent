@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3, COLORS.accent];
 
@@ -59,18 +59,16 @@ export const PillarsDiagram: React.FC<{
                   stroke={color}
                   strokeWidth={4}
                 />
-                <text
+                <WrappedText
+                  text={item}
                   x={x}
-                  y={238}
-                  textAnchor="middle"
-                  fill={COLORS.text}
-                  fontFamily={FONT}
+                  y={252}
+                  maxWidth={spacing - 34}
                   fontSize={30}
                   fontWeight={800}
                   opacity={s}
-                >
-                  {item}
-                </text>
+                  maxLines={3}
+                />
                 <circle cx={x} cy={180 - height + 44} r={20 * s} fill={color} opacity={0.85} />
               </g>
             );
@@ -79,9 +77,14 @@ export const PillarsDiagram: React.FC<{
           {roof && (
             <g opacity={roofProgress} transform={`translate(0 ${interpolate(roofProgress, [0, 1], [-120, 0])})`}>
               <rect x={startX - 130} y={-114} width={(pillars.length - 1) * spacing + 260} height={68} rx={14} fill={`${COLORS.accent}33`} stroke={COLORS.accent} strokeWidth={4} />
-              <text x={0} y={-68} textAnchor="middle" fill={COLORS.text} fontFamily={FONT} fontSize={34} fontWeight={800}>
-                {roof}
-              </text>
+              <WrappedText
+                text={roof}
+                y={-68}
+                maxWidth={(pillars.length - 1) * spacing + 200}
+                fontSize={34}
+                fontWeight={800}
+                maxLines={1}
+              />
             </g>
           )}
         </g>

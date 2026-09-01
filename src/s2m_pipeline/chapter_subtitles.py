@@ -19,9 +19,10 @@ from pathlib import Path
 
 from .models import StoryboardScene, TranscriptSegment
 
-# How far ahead to look when matching a scene's narration back to the
-# transcript; scenes group a handful of segments, never dozens.
-_MAX_SEGMENTS_PER_SCENE = 60
+# How many dropped segments may sit between two kept ones inside a scene.
+# Scenes are merged across cut passages to keep the cutting rhythm calm, so a
+# scene's segments are ordered but not necessarily adjacent in the transcript.
+_MAX_SKIPPED_SEGMENTS = 40
 
 
 @dataclass
@@ -42,23 +43,44 @@ def _format(seconds: float) -> str:
 def match_scene_segments(
     narration: str, segments: list[TranscriptSegment], search_from: int
 ) -> tuple[list[TranscriptSegment], int]:
-    """Find the consecutive run of ASR segments whose text is this narration.
+    """Find the run of ASR segments whose text makes up this narration.
+
+    The segments are in order but need not be adjacent: a scene may span a
+    passage that was dropped, since short groups are merged back together to
+    keep the cutting rhythm calm. Segments that do not continue the narration
+    are therefore skipped rather than ending the match — matching them exactly
+    as consecutive made every merged scene fall back to one long cue.
 
     Returns the run and the index to continue searching from. Scenes are
     processed in order, so the search starts where the previous one ended,
     which also keeps repeated phrases from matching the wrong occurrence.
     """
-    target = " ".join(narration.split())
+    target = narration.split()
+    if not target:
+        return [], search_from
 
     for start in range(search_from, len(segments)):
-        accumulated = ""
-        for end in range(start, min(start + _MAX_SEGMENTS_PER_SCENE, len(segments))):
-            accumulated = f"{accumulated} {segments[end].text}".strip()
-            accumulated = " ".join(accumulated.split())
-            if accumulated == target:
-                return segments[start : end + 1], end + 1
-            if len(accumulated) > len(target):
-                break
+        words = segments[start].text.split()
+        if not words or words != target[: len(words)]:
+            continue
+
+        run = [segments[start]]
+        matched = len(words)
+        skipped = 0
+        index = start + 1
+        while matched < len(target) and index < len(segments) and skipped <= _MAX_SKIPPED_SEGMENTS:
+            words = segments[index].text.split()
+            if words and words == target[matched : matched + len(words)]:
+                run.append(segments[index])
+                matched += len(words)
+                skipped = 0
+            else:
+                skipped += 1
+            index += 1
+
+        if matched == len(target):
+            return run, index
+
     return [], search_from
 
 

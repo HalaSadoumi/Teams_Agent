@@ -13,29 +13,45 @@ Profil technique ? Voir [docs/ARCHITECTURE_TECHNIQUE.md](docs/ARCHITECTURE_TECHN
 documentation module par module (architecture, schémas de données, décisions
 d'implémentation), avec un état d'avancement honnête par composant.
 
-## État actuel : Sprint 3 (Semaines 5-6)
+Vous reprenez le projet ? Voir [docs/GUIDE_REPRISE.md](docs/GUIDE_REPRISE.md) —
+comment ajouter un archétype visuel, changer le rythme des scènes, remplacer le
+modèle de langage, et les pièges à connaître.
 
-**Sprint 1** (ingestion) — terminé : extraction et amélioration de l'audio,
-transcription ASR + sous-titres, détection de locuteurs, détection de scènes
-visuelles, OCR des diapositives, produisant une représentation multimodale du
-contenu (liste d'objets `Scene`, cahier des charges section 8.1).
+## État actuel
 
-**Sprint 2** (compréhension + chapitrage) — terminé : segmentation par
-ruptures sémantiques (Sentence-Transformers) puis génération, par chapitre,
-d'un titre/résumé/points clés via un LLM multimodal (Gemini) qui reçoit à la
-fois la transcription ET les frames représentatives — pas seulement l'OCR
-(cahier des charges section 5.2, "point critique du projet"). Validé sur la
-vidéo réelle complète : 17 chapitres de 3 à 11 minutes.
+Le système est **complet et fonctionnel de bout en bout** : d'un enregistrement
+brut, une seule commande produit un cours chapitré, narré à la voix de
+l'intervenant, illustré de schémas animés, sous-titré et accompagné de
+questions de compréhension, consultable dans une plateforme web.
 
-**Sprint 3** (narration + visuels animés) — en cours : narration à la voix
-originale de l'intervenant (261 scènes générées sur la vidéo complète), et
-génération des visuels animés à partir d'un vocabulaire de 12 archétypes de
-scènes, choisis automatiquement par le LLM d'après le contenu de chaque
-scène.
+Validé sur un enregistrement réel de 95 minutes : 17 chapitres, 79,6 minutes de
+cours (84 % de la durée d'origine conservée — le système transforme, il ne
+résume pas), 261 scènes animées, 1 445 sous-titres, 51 questions.
 
-**Sprint 4** (assemblage) — le code d'assemblage du cours complet et des
-métadonnées de chapitrage est en place (`assemble.py`) ; l'évaluation finale
-selon les critères du cahier des charges reste à mener.
+| étage | état |
+|---|---|
+| Ingestion (audio, transcription, scènes, OCR) | fonctionnel |
+| Chapitrage sémantique auto-calibré | fonctionnel, validé sur 3 durées |
+| Narration à la voix originale | fonctionnel |
+| Planification visuelle (18 archétypes) | fonctionnel |
+| Arrière-plans générés | fonctionnel, service gratuit sans garantie |
+| Rendu vidéo | fonctionnel |
+| Quiz, sous-titres, assemblage, plateforme web | fonctionnel |
+| Empaquetage SCORM | non commencé |
+| Interface de validation avant diffusion | non commencée |
+
+Les limites connues et les suites possibles sont listées en fin de
+[docs/GUIDE_REPRISE.md](docs/GUIDE_REPRISE.md).
+
+## Tests
+
+```bash
+python -m pytest tests/ -q
+```
+
+Quatorze tests couvrent les fonctions qui portent les décisions du système
+(calibration du chapitrage, rythme des scènes, calage des sous-titres). Purs :
+ni réseau, ni modèle, ni clé d'API.
 
 ## Installation
 

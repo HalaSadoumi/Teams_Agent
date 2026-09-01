@@ -57,16 +57,10 @@ def build_scene_visuals(
         chapter_plans = llm.generate_scene_visual_plans(indexed, ocr_text)
 
         for i, scene in enumerate(chapter_scenes):
-            plan = chapter_plans[i]
-            plans[scene.scene_id] = {
-                "archetype": plan.archetype,
-                "label": plan.label,
-                "items": plan.items,
-                "primary": plan.primary,
-                "secondary": plan.secondary,
-                "icon": plan.icon,
-                "image_prompt": plan.image_prompt,
-            }
+            # Dump every field the plan model carries rather than listing them
+            # here: an earlier version enumerated them by hand and silently
+            # dropped two fields added later, which the renderer then never saw.
+            plans[scene.scene_id] = chapter_plans[i].model_dump(exclude={"index"})
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:

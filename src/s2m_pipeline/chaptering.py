@@ -141,6 +141,17 @@ def calibrate(windows: list[_Window]) -> tuple[list[int], float, float]:
 
     assert best is not None
     boundaries, threshold = best
+
+    # The sweep can only move the threshold. On a recording whose similarity
+    # never rises above the range swept, every window stays a boundary and the
+    # count runs past the ceiling the configuration promises — 66 chapters on a
+    # three-hour recording where the settings say at most 30. Raising the
+    # minimum chapter length is the remaining lever, so apply it until the
+    # bound holds whatever the input looks like.
+    while len(boundaries) > settings.chapter_count_max and min_seconds < total_seconds:
+        min_seconds *= 1.5
+        boundaries = _merge_short_chapters(_boundaries_at(sims, threshold), windows, min_seconds)
+
     return boundaries, threshold, min_seconds
 
 

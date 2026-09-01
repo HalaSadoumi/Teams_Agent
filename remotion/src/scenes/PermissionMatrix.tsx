@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { AnimatedArrow, Figure, SceneLabel } from "../illustrations/primitives";
+import { AnimatedArrow, Figure, SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const PALETTE = [COLORS.accent, COLORS.accent2, COLORS.accent3];
 
@@ -58,9 +58,16 @@ export const PermissionMatrix: React.FC<{
                 />
                 <g opacity={appear} transform={`translate(400 ${y}) scale(${appear})`}>
                   <rect x={-210} y={-58} width={420} height={116} rx={16} fill={`${color}1F`} stroke={color} strokeWidth={4} />
-                  <text x={-160} y={12} fill={COLORS.text} fontFamily={FONT} fontSize={30} fontWeight={700}>
-                    {item}
-                  </text>
+                  <WrappedText
+                    text={item}
+                    x={-160}
+                    y={12}
+                    maxWidth={268}
+                    fontSize={30}
+                    fontWeight={700}
+                    anchor="start"
+                    maxLines={2}
+                  />
                   <g transform="translate(158 0)" opacity={decide}>
                     <circle r={30} fill={color} />
                     {granted ? (

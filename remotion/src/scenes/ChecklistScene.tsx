@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 /** Best-practice items sliding in and getting ticked one by one, with the
  * checkmark stroke drawing itself. */
@@ -43,9 +43,16 @@ export const ChecklistScene: React.FC<{ label?: string; items: string[]; duratio
                     strokeDashoffset={54 * (1 - tick)}
                   />
                 </g>
-                <text x={-386} y={12} fill={COLORS.text} fontFamily={FONT} fontSize={34} fontWeight={700}>
-                  {item}
-                </text>
+                <WrappedText
+                  text={item}
+                  x={-386}
+                  y={12}
+                  maxWidth={880}
+                  fontSize={34}
+                  fontWeight={700}
+                  anchor="start"
+                  maxLines={2}
+                />
               </g>
             );
           })}

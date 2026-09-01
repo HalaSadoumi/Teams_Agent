@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 const GREEN = "#34D399";
 const RED = "#F87171";
@@ -53,9 +53,16 @@ export const DoDontList: React.FC<{
                 <path d="M -9 -9 L 9 9 M 9 -9 L -9 9" stroke="#0A0E1A" strokeWidth={6} strokeLinecap="round" />
               )}
             </g>
-            <text x={-152} y={11} fill={COLORS.text} fontFamily={FONT} fontSize={25} fontWeight={600}>
-              {entry.length > 34 ? entry.slice(0, 33) + "…" : entry}
-            </text>
+            <WrappedText
+              text={entry}
+              x={-152}
+              y={11}
+              maxWidth={390}
+              fontSize={25}
+              fontWeight={600}
+              anchor="start"
+              maxLines={2}
+            />
           </g>
         );
       })}

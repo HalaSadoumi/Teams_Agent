@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, FONT } from "../theme";
-import { SceneLabel } from "../illustrations/primitives";
+import { SceneLabel, WrappedText } from "../illustrations/primitives";
 
 /** A 2x2 matrix: axes draw themselves, then each quadrant fills in. Suits
  * "there are four cases" content, which neither a list nor a flow expresses
@@ -53,16 +53,7 @@ export const QuadrantMatrix: React.FC<{
                   stroke={accent}
                   strokeWidth={3}
                 />
-                <text
-                  y={10}
-                  textAnchor="middle"
-                  fill={COLORS.text}
-                  fontFamily={FONT}
-                  fontSize={28}
-                  fontWeight={700}
-                >
-                  {item}
-                </text>
+                <WrappedText text={item} y={10} maxWidth={400} fontSize={28} fontWeight={700} maxLines={4} />
               </g>
             );
           })}

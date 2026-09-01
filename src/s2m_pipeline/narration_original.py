@@ -32,6 +32,18 @@ _TARGET_SCENE_SECONDS = 20.0
 # between (or a real pause) - start a new scene rather than splicing across it.
 _MAX_GAP_SECONDS = 3.0
 
+# A scene shorter than this reads as a jump cut: the viewer gets a new diagram
+# before having read the previous one. Groups are closed whenever a segment is
+# dropped or a pause occurs, which on an opening full of short sentences
+# produced two-second scenes, so short groups are merged back afterwards.
+_MIN_SCENE_SECONDS = 8.0
+# Ceiling for a merged scene, so smoothing the rhythm never produces one long
+# static shot.
+_MAX_SCENE_SECONDS = 34.0
+# Only merge across a break if little was actually removed between the two
+# groups; beyond this the splice would join two unrelated moments.
+_MERGE_MAX_GAP_SECONDS = 15.0
+
 
 def _group_kept_segments(
     decided: list[tuple[TranscriptSegment, str]],
@@ -60,7 +72,42 @@ def _group_kept_segments(
     if current:
         groups.append(current)
 
-    return groups
+    return _merge_short_groups(groups)
+
+
+def _group_seconds(group: list[TranscriptSegment]) -> float:
+    return sum(s.end - s.start for s in group)
+
+
+def _merge_short_groups(
+    groups: list[list[TranscriptSegment]],
+) -> list[list[TranscriptSegment]]:
+    """Fold groups that are too short to stand as a scene into their neighbour.
+
+    Grouping closes a scene on every dropped segment and every pause, which is
+    right for keeping the spliced audio coherent but wrong for the rhythm: a
+    passage of short sentences yields a run of two-second scenes, and the
+    viewer sees the visuals flick past before reading them. Merging afterwards
+    keeps the audio logic untouched and only smooths the cutting.
+    """
+    if not groups:
+        return groups
+
+    merged: list[list[TranscriptSegment]] = [list(groups[0])]
+    for group in groups[1:]:
+        previous = merged[-1]
+        gap = group[0].start - previous[-1].end
+        too_short = (
+            _group_seconds(previous) < _MIN_SCENE_SECONDS
+            or _group_seconds(group) < _MIN_SCENE_SECONDS
+        )
+        fits = _group_seconds(previous) + _group_seconds(group) <= _MAX_SCENE_SECONDS
+        if too_short and fits and gap <= _MERGE_MAX_GAP_SECONDS:
+            previous.extend(group)
+            continue
+        merged.append(list(group))
+
+    return merged
 
 
 def _overlapping_ocr(scenes: list[Scene], start: float, end: float) -> str:

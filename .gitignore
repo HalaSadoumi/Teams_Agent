@@ -31,3 +31,9 @@ remotion/*.log
 remotion/public/backdrops/
 remotion/public/backdrops.json
 web/data/
+
+# Donnees mises en scene pour le moteur de rendu (regenerees a chaque execution)
+remotion/public/
+
+# Scripts de travail ponctuels
+_*.py
