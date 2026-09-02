@@ -415,6 +415,7 @@ function renderExam() {
         )
         .join("")}
       ${question.explanation ? `<div class="explanation" hidden>${escapeHtml(question.explanation)}</div>` : ""}`;
+    block.addEventListener("change", () => block.classList.remove("unanswered"));
     host.appendChild(block);
   });
 
@@ -430,35 +431,103 @@ function renderExam() {
   el("exam-reset").addEventListener("click", renderExam);
 }
 
+// « A, B et C » plutot que « A et B et C ».
+function frenchList(items) {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`;
+}
+
 function gradeExam(questions) {
-  const blocks = document.querySelectorAll("#exam-container .quiz-q");
+  const blocks = [...document.querySelectorAll("#exam-container .quiz-q")];
+  const score = el("exam-score");
+
+  // Une question laissee vide n'est pas une erreur de l'apprenant : c'est un oubli.
+  // On le lui dit avant de noter, plutot que de compter un zero qu'il ne comprendra pas.
+  const blank = blocks.filter((block) => !block.querySelector("input:checked"));
+  if (blank.length) {
+    blocks.forEach((block) => block.classList.remove("unanswered"));
+    blank.forEach((block) => block.classList.add("unanswered"));
+    score.className = "score warn";
+    score.textContent =
+      blank.length === 1
+        ? "Une question est encore sans réponse."
+        : `${blank.length} questions sont encore sans réponse.`;
+    blank[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+
   let correct = 0;
 
   blocks.forEach((block, index) => {
+    block.classList.remove("unanswered");
     const expected = new Set(questions[index].correct_letters || []);
     const chosen = new Set(
       [...block.querySelectorAll("input:checked")].map((input) => input.value),
     );
 
+    const missed = [];
     block.querySelectorAll(".opt").forEach((option) => {
       const letter = option.dataset.letter;
-      option.classList.remove("correct", "wrong");
-      if (expected.has(letter)) option.classList.add("correct");
-      else if (chosen.has(letter)) option.classList.add("wrong");
+      option.classList.remove("hit", "miss", "bad");
+      option.querySelector(".mark")?.remove();
+
+      // Trois etats distincts, la ou il n'y en avait que deux : une bonne reponse
+      // oubliee ne doit pas ressembler a une bonne reponse trouvee.
+      let mark = "";
+      if (expected.has(letter) && chosen.has(letter)) {
+        option.classList.add("hit");
+        mark = "✓";
+      } else if (expected.has(letter)) {
+        option.classList.add("miss");
+        mark = "manquait";
+        missed.push(letter);
+      } else if (chosen.has(letter)) {
+        option.classList.add("bad");
+        mark = "✗";
+      }
+      if (mark) {
+        const tag = document.createElement("span");
+        tag.className = "mark";
+        tag.textContent = mark;
+        option.appendChild(tag);
+      }
       option.querySelector("input").disabled = true;
     });
 
-    const explanation = block.querySelector(".explanation");
-    if (explanation) explanation.hidden = false;
     const exact =
       chosen.size === expected.size && [...chosen].every((letter) => expected.has(letter));
     if (exact) correct += 1;
+
+    const verdict = document.createElement("div");
+    if (exact) {
+      verdict.className = "verdict ok";
+      verdict.textContent = "Réponse correcte";
+    } else if (missed.length && missed.length < expected.size) {
+      verdict.className = "verdict partial";
+      verdict.textContent =
+        `Réponse incomplète — il fallait aussi ${frenchList(missed)}. ` +
+        `Cette question attendait ${expected.size} réponses.`;
+    } else {
+      verdict.className = "verdict ko";
+      const right = frenchList([...expected]);
+      verdict.textContent =
+        expected.size > 1
+          ? `Réponse incorrecte — les bonnes réponses étaient ${right}.`
+          : `Réponse incorrecte — la bonne réponse était ${right}.`;
+    }
+    block.querySelector(".verdict")?.remove();
+    const explanation = block.querySelector(".explanation");
+    if (explanation) {
+      explanation.hidden = false;
+      block.insertBefore(verdict, explanation);
+    } else {
+      block.appendChild(verdict);
+    }
   });
 
   const pct = Math.round((correct / questions.length) * 100);
-  const score = el("exam-score");
   score.className = `score ${pct >= 70 ? "pass" : "fail"}`;
-  score.textContent = `${correct} / ${questions.length} — ${pct} %${pct >= 70 ? " · réussi" : ""}`;
+  score.textContent = `${correct} / ${questions.length} — ${pct} %${pct >= 70 ? " · réussi" : " · non atteint (70 % requis)"}`;
   el("exam-check").disabled = true;
 }
 
