@@ -193,3 +193,66 @@ def test_short_text_is_left_alone():
 
 def test_whitespace_is_normalised():
     assert _clip_on_word("  deux   espaces  ", limit=60) == "deux espaces"
+
+
+# --------------------------------------------------------------------------
+# Reproductibilité : relancer le système doit redonner le même résultat
+# --------------------------------------------------------------------------
+
+def test_backdrop_seed_is_stable_across_processes():
+    """The seed must not move between runs.
+
+    It used to be `hash(scene_id)`, which Python randomises per process: three
+    runs gave 20468, 8410 and 54640 for the same scene, so every execution
+    fetched a fresh set of images while the comment claimed the opposite.
+    """
+    from s2m_pipeline.scene_images import seed_for
+
+    # Valeur figée : si elle change, les arrière-plans de tous les cours
+    # déjà produits ne seraient plus reproductibles.
+    assert seed_for("chapter_00_scene_00") == 15188
+    assert seed_for("chapter_00_scene_00") == seed_for("chapter_00_scene_00")
+    assert seed_for("chapter_00_scene_00") != seed_for("chapter_00_scene_01")
+    assert 0 <= seed_for("chapter_12_scene_07") < 100_000
+
+
+def test_every_model_call_is_forced_to_temperature_zero():
+    """Sampling made the pipeline give a different edit on each run.
+
+    The temperature is applied in `_generate_content`, the single entry point,
+    so a call site added later cannot forget it.
+    """
+    from s2m_pipeline import llm
+
+    class FakeConfig:
+        temperature = None
+
+    class FakeClient:
+        class models:
+            @staticmethod
+            def generate_content(**kwargs):
+                return kwargs
+
+    config = FakeConfig()
+    llm._generate_content(FakeClient(), model="x", contents=[], config=config)
+
+    assert config.temperature == 0.0
+
+
+def test_an_explicit_temperature_is_left_alone():
+    """A call that deliberately asks for sampling keeps its own setting."""
+    from s2m_pipeline import llm
+
+    class FakeConfig:
+        temperature = 0.8
+
+    class FakeClient:
+        class models:
+            @staticmethod
+            def generate_content(**kwargs):
+                return kwargs
+
+    config = FakeConfig()
+    llm._generate_content(FakeClient(), model="x", contents=[], config=config)
+
+    assert config.temperature == 0.8

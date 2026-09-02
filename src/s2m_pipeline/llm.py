@@ -34,6 +34,22 @@ def _is_transient(exc: BaseException) -> bool:
     reraise=True,
 )
 def _generate_content(client: genai.Client, **kwargs):
+    """Single entry point for every call to the model.
+
+    A temperature of zero is forced here rather than at each call site, so a
+    new call cannot forget it. Without it the model samples, and re-running the
+    pipeline on the same recording produces a different cut: the keep/cut pass
+    re-run on the validation video dropped 23 further seconds of filler and
+    changed the chapter from 6:49 to 6:26. Nothing was wrong with either
+    result, but a system meant to be re-run must give the same answer twice.
+
+    This makes the pipeline as reproducible as the API allows — providers do
+    not guarantee bit-identical output even at temperature zero, but the
+    variation drops from "a different edit" to "a word here and there".
+    """
+    config = kwargs.get("config")
+    if config is not None and getattr(config, "temperature", None) is None:
+        config.temperature = 0.0
     return client.models.generate_content(**kwargs)
 
 _client: genai.Client | None = None

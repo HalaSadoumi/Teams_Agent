@@ -14,6 +14,7 @@ re-running skips whatever already exists, so an interrupted batch resumes.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import urllib.parse
 import urllib.request
@@ -33,6 +34,18 @@ STYLE_SUFFIX = (
 ENDPOINT = "https://image.pollinations.ai/prompt/{prompt}"
 WIDTH = 1280
 HEIGHT = 720
+
+
+def seed_for(scene_id: str) -> int:
+    """Stable per-scene seed for the image service.
+
+    Python randomises string hashing per process, so `hash(scene_id)` gives a
+    different value on every run — the opposite of what the seed is for. A
+    digest of the id is stable across processes and machines, so re-running
+    the pipeline reproduces the same backdrops instead of a fresh set.
+    """
+    digest = hashlib.sha1(scene_id.encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big") % 100_000
 
 
 def build_url(image_prompt: str, seed: int) -> str:
@@ -89,8 +102,7 @@ def main() -> None:
     failed: list[str] = []
     for scene_id, plan in tqdm(pending, desc="Generating backdrops"):
         prompt = plan.get("image_prompt") or plan.get("label") or "abstract professional background"
-        # Deterministic per-scene seed: re-running reproduces the same image.
-        seed = abs(hash(scene_id)) % 100_000
+        seed = seed_for(scene_id)
         if not fetch_image(prompt, args.output_dir / f"{scene_id}.jpg", seed):
             failed.append(scene_id)
 

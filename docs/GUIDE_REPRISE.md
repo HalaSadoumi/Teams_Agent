@@ -194,10 +194,21 @@ plus : régénérez-les, ne les réutilisez pas.
 cours complet consomme quelques dizaines d'appels. En cas d'épuisement, le
 traitement s'arrête proprement et reprend le lendemain sans rien recalculer.
 
-**Le rendu est déterministe, la génération d'images ne l'est pas.** Deux
-rendus d'un même plan donnent des images identiques ; deux générations d'un
-même arrière-plan non, la graine dérivant du hachage de chaîne de Python.
-C'est sans conséquence sur le contenu, l'arrière-plan étant un décor.
+**Le système est reproductible, et doit le rester.** Deux exécutions sur le
+même enregistrement doivent donner le même cours. Deux mécanismes le
+garantissent, et tous deux sont faciles à casser sans s'en rendre compte :
+
+- la température est forcée à zéro dans `llm._generate_content`, point d'entrée
+  unique de tous les appels au modèle. Sans elle, le modèle échantillonne et le
+  découpage change à chaque exécution — sur la vidéo de validation, une
+  seconde passe avait retiré 23 secondes de remplissage supplémentaires et fait
+  passer un chapitre de 6 min 49 à 6 min 26 ;
+- la graine des arrière-plans vient de `scene_images.seed_for()`, un condensé
+  de l'identifiant de scène. Ne revenez pas au `hash()` de Python : il est
+  réinitialisé aléatoirement à chaque processus, donc trois exécutions donnent
+  trois graines différentes pour la même scène.
+
+Deux tests verrouillent ces deux propriétés.
 
 ---
 

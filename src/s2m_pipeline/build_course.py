@@ -203,7 +203,7 @@ def run_images(paths: Paths) -> None:
     failed = 0
     for scene_id, plan in tqdm(pending, desc="  backdrops"):
         prompt = plan.get("image_prompt") or plan.get("label") or "abstract professional background"
-        seed = abs(hash(scene_id)) % 100_000
+        seed = scene_images.seed_for(scene_id)
         if not scene_images.fetch_image(prompt, paths.backdrops / f"{scene_id}.jpg", seed):
             failed += 1
 
