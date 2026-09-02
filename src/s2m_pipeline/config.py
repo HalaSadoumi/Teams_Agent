@@ -26,6 +26,12 @@ class Settings:
     # a full video (one call per chapter, more later for script/storyboard).
     # gemini-flash-lite-latest has a separate, more generous free quota.
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
+    # Modele reserve aux etapes de redaction en francais. Le modele allege
+    # ci-dessus suffit aux taches mecaniques (decoupage, plan visuel, quiz)
+    # mais perd regulierement les accents et ecrit une prose plate. La
+    # redaction de la narration ne represente qu'un appel par chapitre, ce qui
+    # tient dans le quota journalier plus etroit du modele complet.
+    gemini_model_writing: str = os.getenv("GEMINI_MODEL_WRITING", "gemini-3.6-flash")
 
     # edge-tts voice for narration (Sprint 3). Free, no API key required.
     tts_voice: str = os.getenv("TTS_VOICE", "fr-FR-DeniseNeural")
@@ -52,6 +58,17 @@ class Settings:
     # Upper bound on the "merge chapters shorter than this" floor; it is
     # scaled down for short videos so they can still be split at all.
     chapter_min_seconds: float = 180.0
+    # Hard ceiling on a finished chapter. Enforced after narration is
+    # synthesised and its real length is known: a chapter that overruns is
+    # split rather than shipped over the limit.
+    chapter_max_seconds: float = 300.0  # 5 min
+
+    # Slide-deck front end. Chapter size is expressed in words of source
+    # material, the same way the video pipeline expresses it in seconds: a
+    # deck twice as long yields twice as many chapters, nothing is tuned to a
+    # particular document.
+    pdf_chapter_target_words: int = 190
+    pdf_chapter_min_words: int = 70
 
 
 settings = Settings()

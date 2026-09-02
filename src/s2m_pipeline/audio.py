@@ -133,3 +133,24 @@ def audio_duration_seconds(audio_path: Path) -> float:
     if result.returncode != 0:
         raise RuntimeError(f"ffprobe failed:\n{result.stderr}")
     return float(result.stdout.strip())
+
+
+def to_wav(input_path: Path, output_wav_path: Path, sample_rate: int = 16000) -> Path:
+    """Transcode any audio file to the WAV the renderer expects.
+
+    Speech synthesis returns MP3, while the Remotion compositions load
+    `audio/<scene>.wav`. Converting here keeps that contract in one place
+    rather than teaching the renderer a second format.
+    """
+    output_wav_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-loglevel", "error",
+            "-i", str(input_path),
+            "-vn", "-acodec", "pcm_s16le",
+            "-ar", str(sample_rate), "-ac", "1",
+            str(output_wav_path),
+        ],
+        check=True,
+    )
+    return output_wav_path

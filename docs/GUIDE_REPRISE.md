@@ -44,11 +44,41 @@ commandes ci-dessous échouent avec `ModuleNotFoundError: No module named
 's2m_pipeline'` — le code vit dans `src/`, qui n'est pas sur le chemin
 d'import par défaut.
 
-Ensuite, pour produire un cours :
+**Puis, à chaque session de travail, activez l'environnement** :
 
 ```bash
-python -m s2m_pipeline.build_course --video "chemin/vers/enregistrement.mp4"
+.venv\Scripts\Activate.ps1
 ```
+
+Sans activation, `python` reste celui du système, où le paquet n'est pas
+installé — c'est l'erreur la plus fréquente à la prise en main. L'installation
+crée quatre commandes nommées qui évitent le problème :
+
+| commande | rôle |
+|---|---|
+| `s2m-course` | produire un cours à partir d'un **enregistrement vidéo** |
+| `s2m-course-pdf` | produire un cours à partir d'un **support PDF** |
+| `s2m-publish` | publier un cours déjà produit vers la plateforme web |
+| `s2m-quiz-docx` | convertir un quiz officiel Word au format du lecteur |
+
+Produire un cours à partir d'un enregistrement :
+
+```bash
+s2m-course --video "chemin/vers/enregistrement.mp4"
+```
+
+Produire un cours à partir d'un support, de bout en bout — c'est la commande
+unique demandée pour tout nouveau PDF :
+
+```bash
+s2m-course-pdf --pdf "support.pdf" --course-id mon_cours --title "Mon cours" --quiz-docx "quiz.docx"
+```
+
+`--quiz-docx` est facultatif : sans lui, les questions sont générées à partir
+de la narration. Neuf étapes s'enchaînent — lecture du support, rédaction de
+la narration, découpage en scènes, synthèse vocale, sous-titres, plan visuel,
+arrière-plans, rendu, publication — et chacune est ignorée si son résultat
+existe déjà.
 
 L'orchestrateur enchaîne sept étapes et **détecte celles déjà faites** : si le
 traitement est interrompu (quota d'API épuisé, coupure, arrêt volontaire), la
@@ -65,7 +95,7 @@ python -m s2m_pipeline.build_course --video "..." --from render
 Puis, pour publier vers la plateforme de consultation :
 
 ```bash
-python -m s2m_pipeline.web_export --course-id <id> --subtitles output/<id>/subtitles
+s2m-publish --course-id <id> --subtitles output/<id>/subtitles
 python -m http.server 8123 --directory web
 ```
 
@@ -73,6 +103,55 @@ Comptez environ **sept heures** pour un enregistrement de 95 minutes sur un
 poste sans carte graphique. Les deux étapes coûteuses — génération des images
 et rendu vidéo — représentent plus de 80 % du temps et sont les premières à
 accélérer si une machine plus puissante est disponible.
+
+---
+
+## 2 bis. Deux entrées, une seule chaîne
+
+Le système produit deux cours à partir de la même formation, et il est utile de
+savoir d'emblée ce qui les sépare — c'est peu.
+
+| | Parcours détaillé | Parcours essentiel |
+|---|---|---|
+| source | l'enregistrement de la session | le support de formation (PDF) |
+| commande | `s2m-course` | `s2m-course-pdf` |
+| narration | la voix réelle de l'intervenant, remontée | une voix de synthèse |
+| durée | celle de la session, moins les silences | chapitres de moins de 5 min |
+| sortie vidéo | `remotion/out/` | `remotion/out_pdf/` |
+
+**Les modules propres à chaque entrée** — ce sont les seuls à ne servir qu'à
+un parcours :
+
+| module | parcours |
+|---|---|
+| `transcription.py`, `scenes.py`, `ocr.py`, `diarization.py` | détaillé (ingestion) |
+| `embeddings.py`, `chaptering.py` | détaillé (chapitrage sémantique) |
+| `content_selection.py`, `narration_original.py` | détaillé (voix réelle) |
+| `build_course.py` | détaillé (orchestrateur) |
+| `pdf_source.py` | essentiel (lecture du support) |
+| `script.py`, `storyboard.py`, `narration.py`, `tts.py` | essentiel (voix de synthèse) |
+| `build_course_from_pdf.py` | essentiel (orchestrateur) |
+
+**Tout le reste est partagé** et ne doit jamais dépendre de la provenance :
+`config.py`, `models.py`, `llm.py`, `audio.py`, `scene_visuals.py`,
+`scene_images.py`, `chapter_subtitles.py`, `quiz.py`, `quiz_reference.py`,
+`assemble.py`, `web_export.py`, ainsi que l'intégralité de `remotion/src/` et
+de `web/`.
+
+C'est ce partage qui fait l'intérêt de l'architecture : ajouter une troisième
+entrée — un document Word, une page web — demande un module de lecture et un
+orchestrateur, rien d'autre.
+
+**Les répertoires de travail**, non versionnés :
+
+```
+output/<cours>/          artefacts du cours (pages, chapitres, plans, sous-titres)
+output/_archives/        anciennes versions mises de côté, jamais écrasées
+remotion/out/            vidéos du parcours détaillé
+remotion/out_pdf/        vidéos du parcours essentiel
+remotion/archives/       rendus précédents conservés pour comparaison
+web/data/<cours>/        ce que la plateforme sert réellement
+```
 
 ---
 

@@ -233,9 +233,13 @@ def _sync_remotion_inputs(paths: Paths) -> None:
     (public / "backdrops.json").write_text(json.dumps(available), encoding="utf-8")
 
 
-def run_render(paths: Paths) -> None:
+def run_render(paths: Paths, out_name: str = "out") -> None:
+    """Render one video per chapter.
+
+    `out_name` lets a second course render beside the first instead of
+    overwriting it: the slide-deck pipeline writes to remotion/out_pdf."""
     _sync_remotion_inputs(paths)
-    out_dir = REMOTION_DIR / "out"
+    out_dir = REMOTION_DIR / out_name
     out_dir.mkdir(exist_ok=True)
 
     chapters = json.loads(paths.chapters.read_text(encoding="utf-8"))
@@ -252,7 +256,8 @@ def run_render(paths: Paths) -> None:
         composition_id = chapter_id.replace("_", "-")
         result = subprocess.run(
             [
-                npx, "remotion", "render", "src/index.ts", composition_id, str(target),
+                npx, "remotion", "render", "src/index.ts", composition_id,
+                str(Path(out_name) / f"{chapter_id}.mp4"),
                 "--log=error",
                 # The generated backdrops are blurred and composited, so a
                 # frame can take well over Remotion's 30s default on a busy

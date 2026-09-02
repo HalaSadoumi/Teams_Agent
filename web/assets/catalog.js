@@ -1,67 +1,92 @@
-/* Course catalog: lists every course the pipeline has exported.
- * Reads data/courses.json, which web_export.py keeps up to date. */
+/* Catalogue des formations.
+ *
+ * Une même formation peut donner deux cours : un parcours détaillé, qui garde
+ * tout ce que l'intervenant a dit, et un parcours essentiel écrit à partir du
+ * support. Le catalogue affiche la différence pour que l'apprenant choisisse
+ * en connaissance de cause. */
 
-const STORAGE_PREFIX = "s2m-course-progress:";
+const TRACKS = {
+  detaille: {
+    label: "Parcours détaillé",
+    hint: "Reprend l'intégralité de la session, chapitres longs.",
+  },
+  essentiel: {
+    label: "Parcours essentiel",
+    hint: "Droit au but, chapitres de moins de cinq minutes.",
+  },
+};
 
 function progressFor(courseId, chapterCount) {
-  if (!chapterCount) return 0;
   try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + courseId);
-    if (!raw) return 0;
-    const done = (JSON.parse(raw).completed || []).length;
-    return Math.round((done / chapterCount) * 100);
+    const raw = localStorage.getItem(`s2m-course-progress:${courseId}`);
+    if (!raw || !chapterCount) return 0;
+    const seen = JSON.parse(raw).completed || [];
+    return Math.round((seen.length / chapterCount) * 100);
   } catch {
     return 0;
   }
 }
 
-function courseCard(course) {
-  const pct = progressFor(course.id, course.chapters);
-  const thumb = course.thumbnail
-    ? `<img src="data/${course.id}/${course.thumbnail}" alt="" />`
-    : '<span class="placeholder">▶</span>';
+function card(course) {
+  const track = TRACKS[course.track] || TRACKS.detaille;
+  const done = progressFor(course.id, course.chapters);
+  const href = `course.html?course=${encodeURIComponent(course.id)}`;
 
-  const pdfButton = course.pdf
-    ? `<a class="btn small" href="data/${course.id}/${course.pdf}" target="_blank" rel="noopener">Support PDF</a>`
-    : "";
-
-  return `
-    <article class="course-card">
-      <div class="course-thumb">${thumb}</div>
-      <div class="course-body">
-        <h3>${course.title}</h3>
-        <p>${course.description || ""}</p>
-        <div class="course-stats">
-          <span class="stat"><strong>${course.chapters}</strong> chapitres</span>
-          <span class="stat"><strong>${course.duration_minutes}</strong> min</span>
-          ${course.questions ? `<span class="stat"><strong>${course.questions}</strong> questions</span>` : ""}
-          ${pct ? `<span class="stat"><strong>${pct}%</strong> suivi</span>` : ""}
-        </div>
-        <div class="course-actions">
-          <a class="btn primary" href="course.html?course=${encodeURIComponent(course.id)}">
-            ${pct ? "Reprendre" : "Commencer"}
-          </a>
-          ${pdfButton}
-        </div>
+  const el = document.createElement("article");
+  el.className = "course-card";
+  el.innerHTML = `
+    <a class="course-thumb" href="${href}" aria-label="${course.title}">
+      ${
+        course.thumbnail
+          ? `<img src="data/${course.id}/${course.thumbnail}" alt="" loading="lazy" />`
+          : ""
+      }
+      <span class="track-badge ${course.track === "essentiel" ? "essentiel" : ""}">${track.label}</span>
+    </a>
+    <div class="course-body">
+      <h3>${course.title}</h3>
+      <p class="desc">${course.description || track.hint}</p>
+      <div class="course-stats">
+        <span><b>${course.chapters}</b> chapitres</span>
+        <span><b>${course.duration_minutes}</b> min</span>
+        ${course.questions ? `<span><b>${course.questions}</b> questions</span>` : ""}
       </div>
-    </article>`;
+      <div class="course-progress">
+        <div class="bar"><div style="width:${done}%"></div></div>
+        <span>${done ? `${done} % suivi` : "Non commencé"}</span>
+      </div>
+      <div class="course-actions">
+        <a class="btn primary" href="${href}">${done ? "Reprendre" : "Commencer"}</a>
+        ${
+          course.pdf
+            ? `<a class="btn" href="data/${course.id}/${course.pdf}" target="_blank" rel="noopener">Support PDF</a>`
+            : ""
+        }
+      </div>
+    </div>`;
+  return el;
 }
 
 async function init() {
-  const root = document.getElementById("catalog");
+  const host = document.getElementById("catalog");
   try {
-    const response = await fetch("data/courses.json");
-    if (!response.ok) throw new Error("catalogue indisponible");
-    const { courses } = await response.json();
+    const response = await fetch("data/courses.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(response.statusText);
+    const courses = (await response.json()).courses || [];
 
-    if (!courses || !courses.length) {
-      root.innerHTML = '<p class="muted">Aucune formation disponible pour le moment.</p>';
+    if (!courses.length) {
+      host.innerHTML = `<p class="muted">Aucune formation publiée pour le moment.</p>`;
       return;
     }
-    root.innerHTML = courses.map(courseCard).join("");
-  } catch {
-    root.innerHTML =
-      '<p class="muted">Impossible de charger le catalogue. Lancez un serveur local depuis le dossier <code>web/</code>.</p>';
+
+    // Le parcours essentiel d'abord : c'est celui qu'on conseille pour une
+    // première lecture, le détaillé restant disponible pour approfondir.
+    courses.sort((a, b) => (a.track === "essentiel" ? -1 : 1) - (b.track === "essentiel" ? -1 : 1));
+
+    host.innerHTML = "";
+    courses.forEach((course) => host.appendChild(card(course)));
+  } catch (error) {
+    host.innerHTML = `<p class="muted">Catalogue indisponible (${error.message}).</p>`;
   }
 }
 

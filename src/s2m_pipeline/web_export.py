@@ -114,6 +114,11 @@ def export(
     thumbnail_path: Path | None,
     subtitle_dir: Path | None,
     copy_videos: bool,
+    # Which reading of the same material this course is. Two courses can be
+    # built from one training: a full one that keeps everything the speaker
+    # said, and a short one written from the support document. The catalogue
+    # shows the difference so a learner picks knowingly.
+    track: str = "detaille",
 ) -> None:
     chapters = [
         Chapter.model_validate(c) for c in json.loads(chapters_path.read_text(encoding="utf-8"))
@@ -129,14 +134,19 @@ def export(
     )
 
     questions = 0
+    filtered: dict = {}
     if quiz_path and quiz_path.exists():
         quiz = json.loads(quiz_path.read_text(encoding="utf-8"))
-        exported_ids = {c["id"] for c in exported}
-        # Never advertise a quiz for a chapter the player cannot play.
-        filtered = {k: v for k, v in quiz.items() if k in exported_ids}
-        questions = sum(len(v) for v in filtered.values())
-    else:
-        filtered = {}
+        if isinstance(quiz.get("questions"), list):
+            # An official quiz written for the training as a whole: it is not
+            # attached to chapters, so there is nothing to filter.
+            filtered = {"questions": quiz["questions"]}
+            questions = len(quiz["questions"])
+        else:
+            exported_ids = {c["id"] for c in exported}
+            # Never advertise a quiz for a chapter the player cannot play.
+            filtered = {k: v for k, v in quiz.items() if k in exported_ids}
+            questions = sum(len(v) for v in filtered.values())
     (course_dir / "quiz.json").write_text(
         json.dumps(filtered, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -162,6 +172,7 @@ def export(
             "questions": questions,
             "pdf": pdf_name,
             "thumbnail": thumb_name,
+            "track": track,
         }
     )
 
@@ -190,6 +201,10 @@ def main() -> None:
     parser.add_argument(
         "--no-videos", action="store_true", help="Only refresh metadata, skip copying videos"
     )
+    parser.add_argument(
+        "--track", default="detaille", choices=["detaille", "essentiel"],
+        help="Which reading of the material this course is, shown in the catalogue",
+    )
     args = parser.parse_args()
 
     export(
@@ -203,6 +218,7 @@ def main() -> None:
         args.thumbnail,
         args.subtitles,
         copy_videos=not args.no_videos,
+        track=args.track,
     )
 
 

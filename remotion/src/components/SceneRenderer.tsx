@@ -19,6 +19,12 @@ import { DoDontList } from "../scenes/DoDontList";
 import { HierarchyTree } from "../scenes/HierarchyTree";
 import { StatRow } from "../scenes/StatRow";
 import { QuoteHighlight } from "../scenes/QuoteHighlight";
+import { BarChart } from "../scenes/BarChart";
+import { DonutShare } from "../scenes/DonutShare";
+import { RankingList } from "../scenes/RankingList";
+import { VennOverlap } from "../scenes/VennOverlap";
+import { FunnelStages } from "../scenes/FunnelStages";
+import { PyramidLevels } from "../scenes/PyramidLevels";
 import { TakeawayBand, takeawayHeight } from "./TakeawayBand";
 
 /** Generic dispatch: every scene is rendered purely from its generated visual
@@ -134,6 +140,42 @@ const body = (
           items={p.items}
           accent={accent}
           durationInFrames={durationInFrames}
+        />
+      );
+    case "bar_chart":
+      return <BarChart {...common} items={p.items} secondary={p.secondary} accent={accent} />;
+    case "donut_share":
+      return (
+        <DonutShare
+          {...common}
+          primary={p.primary}
+          secondary={p.secondary}
+          items={p.items}
+          accent={accent}
+        />
+      );
+    case "ranking_list":
+      return <RankingList {...common} items={p.items} secondary={p.secondary} accent={accent} />;
+    case "venn_overlap":
+      return (
+        <VennOverlap
+          {...common}
+          items={p.items}
+          primary={p.primary}
+          secondary={p.secondary}
+          accent={accent}
+        />
+      );
+    case "funnel":
+      return <FunnelStages {...common} items={p.items} secondary={p.secondary} accent={accent} />;
+    case "pyramid":
+      return (
+        <PyramidLevels
+          {...common}
+          items={p.items}
+          primary={p.primary}
+          secondary={p.secondary}
+          accent={accent}
         />
       );
     case "title_statement":

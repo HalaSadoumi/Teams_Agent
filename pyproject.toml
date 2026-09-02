@@ -9,6 +9,16 @@ description = "Transformation d'enregistrements de formation en cours e-learning
 requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
+# Commandes nommees, disponibles apres `pip install -e .`. Elles evitent la
+# forme `python -m s2m_pipeline...`, qui echoue des que le `python` du PATH
+# n'est pas celui de l'environnement virtuel — l'erreur la plus frequente a
+# la prise en main.
+[project.scripts]
+s2m-course = "s2m_pipeline.build_course:main"
+s2m-course-pdf = "s2m_pipeline.build_course_from_pdf:main"
+s2m-publish = "s2m_pipeline.web_export:main"
+s2m-quiz-docx = "s2m_pipeline.quiz_reference:main"
+
 [tool.setuptools.dynamic]
 # La liste des dépendances reste dans requirements.txt, qui sert de source
 # unique : rien à tenir à jour en double.

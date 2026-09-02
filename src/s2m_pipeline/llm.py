@@ -70,6 +70,15 @@ class ChapterContent(BaseModel):
     key_points: list[str]
 
 
+class SlideChapterContent(BaseModel):
+    """A course chapter written from slides: its metadata and its narration."""
+
+    title: str
+    summary: str
+    key_points: list[str]
+    narration: str
+
+
 class ScriptOutput(BaseModel):
     script: str
 
@@ -387,6 +396,12 @@ SCENE_ARCHETYPES = {
     "stat_row": "PLUSIEURS chiffres cites cote a cote (ex. 61%, 45%, 30%)",
     "quote_highlight": "une phrase forte ou une definition marquante, mise en exergue",
     "title_statement": "un message cle affiche sobrement, quand aucun autre schema ne convient",
+    "bar_chart": "PLUSIEURS valeurs mesurees que l'on compare (barres). items au format \"84% Rancongiciel\"",
+    "donut_share": "UNE proportion rapportee a un tout (ex. 32% des repondants). primary = le chiffre",
+    "ranking_list": "un classement ordonne, le rang porte l'information (1er, 2e...). items au format \"18 000 detections au Maroc\"",
+    "venn_overlap": "une notion contenue dans une autre, ou deux notions qui se recouvrent. items[0] = le grand ensemble, items[1] = celui qui est dedans",
+    "funnel": "des etapes successives qui filtrent : chacune ne laisse passer qu'une partie de la precedente",
+    "pyramid": "des niveaux empiles par ordre de priorite, la base porte le sommet. items[0] = la base",
 }
 
 # Domain-neutral icon vocabulary, validated against the installed
@@ -494,6 +509,19 @@ Pour chaque scene, reponds avec :
 Choisis l'archetype d'apres le SENS de la narration, pas au hasard, et varie les archetypes \
 d'une scene a l'autre quand le contenu s'y prete. N'utilise "title_statement" qu'en dernier \
 recours, quand aucun schema ne convient vraiment - et meme dans ce cas, remplis ses items.
+
+Regles de choix a appliquer AVANT de retomber sur une liste a puces ou des blocs :
+- la scene cite PLUSIEURS valeurs chiffrees que l'on compare -> "bar_chart"
+- elle cite UNE proportion rapportee a un tout (x % des entreprises, des repondants,
+  des attaques) -> "donut_share"
+- elle etablit un classement ou un rang (premier, deuxieme, en tete de...) -> "ranking_list"
+- elle presente une notion comme incluse dans une autre, ou deux notions qui se
+  recouvrent -> "venn_overlap"
+- elle decrit des etapes qui filtrent, chacune ne laissant passer qu'une partie de la
+  precedente -> "funnel"
+- elle presente des niveaux dont l'un porte les autres, des fondations -> "pyramid"
+Quand une scene parle de grandeurs, un schema qui MONTRE la grandeur vaut toujours mieux
+qu'une liste qui l'enonce.
 
 Tous les textes affiches doivent etre en francais et utiliser les accents corrects \
 (é, è, à, ç) - sauf "image_prompt" qui est en anglais. Reponds pour CHAQUE scene, sans en \
@@ -667,3 +695,119 @@ def generate_quiz(
         if correct and all(c in letters for c in correct):
             valid.append(q)
     return valid
+
+
+# --- Slide-deck front end: write a chapter's narration from its slides ---
+
+_SLIDE_CHAPTER_PROMPT = """Tu es un ingenieur pedagogique. A partir des diapositives \
+d'un chapitre ci-dessous, redige la NARRATION de ce chapitre de cours e-learning : le \
+texte qui sera lu a voix haute par-dessus les animations.
+
+Le critere n'est pas la longueur, c'est la DENSITE. Un chapitre doit rester court ET \
+contenir tout ce que l'apprenant doit savoir sur ce point : a la fin, il ne doit avoir \
+aucune raison d'ouvrir les diapositives pour completer ce qu'il vient d'entendre.
+
+Ce qui se coupe : les tournures de remplissage, les redites, les phrases de liaison qui \
+n'apportent rien, les adjectifs decoratifs.
+Ce qui ne se coupe JAMAIS : les donnees. Chaque pourcentage, montant, date, duree, \
+classement et source nommee presents sur les diapositives — y compris ceux qui ne sont que \
+dans un graphique, un tableau ou un encadre de l'image — doit figurer dans la narration. \
+Un chiffre coute trois mots : il n'y a aucune raison de le sacrifier. Ecrire "les fuites \
+de donnees et la compromission des messageries" alors que le support indique 61 % et 45 % \
+fait perdre l'essentiel de l'information.
+
+Longueur indicative : {words_min} a {words_max} mots ({minutes} minutes). Depasse-la \
+plutot que d'omettre une donnee, mais n'ecris jamais un mot qui n'apprend rien.
+
+Regles de fond :
+- Tu DEVELOPPES les diapositives, tu ne les recopies pas. Une diapositive donne des
+  mots-cles ; la narration en fait un enseignement : chaque terme est defini, chaque
+  mecanisme est explique, chaque chiffre est commente. Un apprenant qui ecoute sans voir
+  le support doit comprendre.
+- La distinction a tenir : n'invente aucun FAIT, CHIFFRE, DATE, NOM ni NORME absent des
+  diapositives. En revanche expliquer, reformuler, illustrer et relier les idees entre
+  elles est exactement ce qu'on te demande — c'est cela, enseigner.
+- Si tu es nettement en dessous de {words_min} mots, c'est que tu t'es contente de lire :
+  reprends et explique davantage.
+- Avant de repondre, relis chaque diapositive et son image, et verifie qu'aucun chiffre,
+  aucune date et aucune source nommee n'a ete laisse de cote.
+- Droit au but. Pas de formule d'introduction, pas de "dans ce chapitre nous allons voir",
+  pas de conclusion qui resume ce qui vient d'etre dit. Chaque phrase apporte quelque
+  chose.
+- Ne parle jamais du support : ni "cette diapositive", ni "comme vous le voyez", ni "la
+  presentation". L'apprenant suit un cours, pas un diaporama.
+- Enchaine naturellement d'une idee a la suivante.
+
+Regles de forme, parce que ce texte sera lu par une voix de synthese :
+- Phrases courtes, une idee par phrase. Evite les incises et les parentheses.
+- Ecris les nombres comme ils se prononcent quand c'est plus naturel a l'oral
+  (ecris "quatre-vingt-quatre pour cent" plutot que "84%").
+- Developpe les sigles a leur premiere apparition.
+- Francais correct avec TOUS les accents et diacritiques (é, è, ê, à, ù, ç). Ecrire
+  "securite", "cybersecurite" ou "couts" est une faute : la forme correcte est
+  "sécurité", "cybersécurité", "coûts". Cela vaut aussi pour le titre.
+
+Reponds avec :
+- "title" : titre du chapitre, 3 a 8 mots, sans numero
+- "summary" : deux phrases resumant ce que l'apprenant retiendra
+- "key_points" : 3 a 5 points cles, une ligne chacun
+- "narration" : le texte a lire, en un seul bloc de prose
+
+--- TEXTE DES DIAPOSITIVES DU CHAPITRE ---
+{slides_text}
+"""
+
+
+def generate_slide_chapter(
+    slides_text: str,
+    page_images: list[Path],
+    words_min: int = 280,
+    words_max: int = 400,
+) -> SlideChapterContent:
+    """Write one course chapter from its slides.
+
+    The page renders are sent alongside the extracted text: a slide's meaning
+    often sits in a diagram or a chart that the text layer does not carry, and
+    the model has to see it to narrate it. This is the same multimodal reading
+    the video pipeline applies to frames.
+    """
+    client = _get_client()
+    minutes = f"{words_min / 150:.1f} a {words_max / 150:.1f}"
+    prompt = _SLIDE_CHAPTER_PROMPT.format(
+        slides_text=slides_text or "(diapositive sans texte)",
+        words_min=words_min,
+        words_max=words_max,
+        minutes=minutes,
+    )
+
+    contents: list = [prompt]
+    for image_path in page_images:
+        contents.append(Image.open(image_path))
+
+    def call(model: str):
+        return _generate_content(
+            client,
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=SlideChapterContent,
+            ),
+        )
+
+    try:
+        response = call(settings.gemini_model_writing)
+    except genai_errors.APIError as exc:
+        # The writing model's free tier is capped at 20 requests a day, which a
+        # long deck plus a re-run exhausts. Falling back keeps the run going;
+        # the lighter model writes flatter French and sometimes drops accents,
+        # so the chapter is flagged rather than silently accepted.
+        if exc.code != 429:
+            raise
+        print(
+            f"    quota du modele de redaction epuise, repli sur {settings.gemini_model}",
+            flush=True,
+        )
+        response = call(settings.gemini_model)
+
+    return SlideChapterContent.model_validate_json(response.text)

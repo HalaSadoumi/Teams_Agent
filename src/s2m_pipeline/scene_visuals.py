@@ -56,11 +56,22 @@ def build_scene_visuals(
 
         chapter_plans = llm.generate_scene_visual_plans(indexed, ocr_text)
 
+        chapter_dicts = []
         for i, scene in enumerate(chapter_scenes):
             # Dump every field the plan model carries rather than listing them
             # here: an earlier version enumerated them by hand and silently
             # dropped two fields added later, which the renderer then never saw.
-            plans[scene.scene_id] = chapter_plans[i].model_dump(exclude={"index"})
+            chapter_dicts.append(chapter_plans[i].model_dump(exclude={"index"}))
+
+        # Variety is enforced here rather than asked of the model: the planner
+        # cannot see the chapter as a whole, so it repeats a diagram without
+        # knowing it.
+        reassigned = diversify(chapter_dicts)
+        if reassigned:
+            print(f"    {chapter_id}: {reassigned} scene(s) redrawn to avoid repetition", flush=True)
+
+        for scene, plan in zip(chapter_scenes, chapter_dicts):
+            plans[scene.scene_id] = plan
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
@@ -95,6 +106,68 @@ def main() -> None:
     print(f"\nDone. {len(plans)} scene visual plans written to {args.output}")
     for archetype, n in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"  {archetype:18s} {n}")
+
+# Archetypes that take the same shape of content, so one can stand in for
+# another without misrepresenting the scene: the items keep their meaning and
+# only the drawing changes. The groups stay narrow because swapping across them
+# would lie — a sequence is not a set, a proportion is not a ranking.
+_INTERCHANGEABLE: tuple[tuple[str, ...], ...] = (
+    ("checklist", "pillars", "hierarchy", "pyramid", "concentric_layers"),
+    ("timeline", "funnel", "cycle"),
+    ("bar_chart", "stat_row", "ranking_list"),
+    ("stat_reveal", "donut_share"),
+    ("title_statement", "quote_highlight"),
+    ("comparison", "separated_groups", "do_dont"),
+)
+
+# Any scene carrying two or more named items can be drawn as one of these,
+# whatever the planner first chose: they only need a list of short labels.
+_LIST_SHAPED = ("checklist", "pillars", "hierarchy", "pyramid", "concentric_layers")
+
+# How far back to look before calling an archetype "just seen".
+_RECENT_WINDOW = 3
+
+
+def _alternatives(archetype: str, plan: dict) -> list[str]:
+    """Archetypes that could draw this same plan without changing its meaning."""
+    options: list[str] = []
+    for group in _INTERCHANGEABLE:
+        if archetype in group:
+            options.extend(a for a in group if a != archetype)
+            break
+    # A two-member group runs out after one swap. Any scene that carries named
+    # items can also be drawn as a list-shaped diagram, which gives the pass
+    # somewhere to go on a long run of the same card.
+    if len([i for i in (plan.get("items") or []) if i and i.strip()]) >= 2:
+        options.extend(a for a in _LIST_SHAPED if a != archetype and a not in options)
+    return options
+
+
+def diversify(plans: list[dict]) -> int:
+    """Break up runs of the same diagram inside one chapter, in place.
+
+    The planner judges each scene on its own merits, so a chapter about figures
+    came out as four bar charts in a row and a chapter of definitions as four
+    typographic cards. Every choice was defensible; watched end to end they read
+    as one slide repeated — which is exactly the complaint the visuals were
+    meant to answer.
+
+    Returns how many scenes were reassigned.
+    """
+    seen: list[str] = []
+    changed = 0
+    for plan in plans:
+        archetype = plan.get("archetype", "")
+        recent = seen[-_RECENT_WINDOW:]
+        if archetype in recent:
+            for candidate in _alternatives(archetype, plan):
+                if candidate not in recent:
+                    plan["archetype"] = candidate
+                    archetype = candidate
+                    changed += 1
+                    break
+        seen.append(archetype)
+    return changed
 
 
 if __name__ == "__main__":

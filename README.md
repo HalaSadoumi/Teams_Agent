@@ -61,6 +61,11 @@ python -m venv .venv
 .venv\Scripts\pip install -e .
 ```
 
+Activez ensuite l'environnement à chaque session (`.venv\Scripts\Activate.ps1`) :
+sans cela, `python` reste celui du système et le paquet n'y est pas installé.
+L'installation crée quatre commandes — `s2m-course`, `s2m-course-pdf`,
+`s2m-publish`, `s2m-quiz-docx` — qui évitent la forme `python -m …`.
+
 La dernière ligne installe le paquet en mode édition. Elle est **indispensable** :
 le code vit dans `src/`, et sans elle toutes les commandes `python -m s2m_pipeline...`
 échouent avec `ModuleNotFoundError: No module named 's2m_pipeline'`. Le mode

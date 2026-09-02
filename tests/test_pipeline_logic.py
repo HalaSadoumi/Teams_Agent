@@ -256,3 +256,176 @@ def test_an_explicit_temperature_is_left_alone():
     llm._generate_content(FakeClient(), model="x", contents=[], config=config)
 
     assert config.temperature == 0.8
+
+
+# --------------------------------------------------------------------------
+# Support de cours : lecture du document et découpage en chapitres
+# --------------------------------------------------------------------------
+
+def slide(index: int, text: str):
+    from s2m_pipeline.models import Scene
+    from s2m_pipeline.pdf_source import PAGE_SECONDS
+
+    return Scene(
+        id=f"page_{index:03d}",
+        start=index * PAGE_SECONDS,
+        end=(index + 1) * PAGE_SECONDS,
+        ocr_text=text,
+    )
+
+
+def test_section_dividers_are_recognised_without_knowing_the_subject():
+    """A divider is short and in capitals — a rule that holds for any deck."""
+    from s2m_pipeline import pdf_source
+
+    assert pdf_source.is_section_divider("DÉFINITIONS ET PRINCIPES DE BASE")
+    assert pdf_source.is_section_divider("IMPACT DE LA CYBERCRIMINALITÉ")
+    # La page de clôture est courte mais pas en capitales : ce n'est pas un
+    # séparateur, et la confondre couperait un chapitre en trop.
+    assert not pdf_source.is_section_divider(
+        "Sécurité SI : Une priorité pour chacun Questions & Réponses"
+    )
+    # Une page de contenu, même brève, n'en est pas un non plus.
+    assert not pdf_source.is_section_divider(
+        "Le risque cyber est la priorité numéro 1 des entreprises marocaines en 2024"
+    )
+
+
+def test_chapters_never_span_two_sections():
+    from s2m_pipeline import pdf_source
+
+    pages = [
+        slide(0, "PREMIERE SECTION"),
+        slide(1, "contenu " * 40),
+        slide(2, "DEUXIEME SECTION"),
+        slide(3, "contenu " * 40),
+    ]
+    groups = pdf_source.group_into_chapters(pages)
+
+    assert len(groups) == 2
+    assert [s.id for s in groups[0]] == ["page_000", "page_001"]
+    assert [s.id for s in groups[1]] == ["page_002", "page_003"]
+
+
+def test_a_long_section_is_split_evenly_rather_than_leaving_a_stub():
+    """Filling to the target and letting the remainder trail produced a
+    251-word chapter followed by a 72-word one; the split is now balanced."""
+    from s2m_pipeline import pdf_source
+
+    pages = [slide(0, "SECTION UNIQUE")] + [slide(i, "mot " * 100) for i in range(1, 7)]
+    groups = pdf_source.group_into_chapters(pages)
+    sizes = [sum(len(s.ocr_text.split()) for s in g) for g in groups]
+
+    assert len(groups) >= 2
+    assert max(sizes) <= 2 * min(sizes)
+
+
+def test_deck_length_drives_the_number_of_chapters():
+    """Twice the material, roughly twice the chapters — no fixed count."""
+    from s2m_pipeline import pdf_source
+
+    short = [slide(0, "SECTION")] + [slide(i, "mot " * 100) for i in range(1, 4)]
+    long = [slide(0, "SECTION")] + [slide(i, "mot " * 100) for i in range(1, 8)]
+
+    assert len(pdf_source.group_into_chapters(long)) > len(
+        pdf_source.group_into_chapters(short)
+    )
+
+
+# --------------------------------------------------------------------------
+# Quiz officiel fourni en Word
+# --------------------------------------------------------------------------
+
+def test_official_question_is_read_exactly():
+    """The wording, the options and the answers must survive untouched: this
+    is the trainer's quiz, not one to paraphrase."""
+    from s2m_pipeline.quiz_reference import parse_question
+
+    parsed = parse_question(
+        'Question: Quels sont les trois objectifs fondamentaux de la cybersécurité, '
+        'souvent désignés par le sigle "CID" ? (Sélectionnez toutes les réponses '
+        "pertinentes) A) Confidentialité B) Intégrité C) Disponibilité D) Conformité "
+        "E) Durabilité Bonnes Réponses: A, B et C"
+    )
+
+    assert parsed is not None
+    assert parsed["question"].startswith("Quels sont les trois objectifs")
+    assert [o["letter"] for o in parsed["options"]] == ["A", "B", "C", "D", "E"]
+    assert parsed["options"][0]["text"] == "Confidentialité"
+    assert parsed["correct_letters"] == ["A", "B", "C"]
+
+
+def test_single_answer_question_is_read():
+    from s2m_pipeline.quiz_reference import parse_question
+
+    parsed = parse_question(
+        "Question: Qu'est-ce que la \"Confidentialité\" ? "
+        "A) La garantie que les données sont exactes. "
+        "B) La protection des données contre l'accès non autorisé. "
+        "Bonne Réponse: B"
+    )
+
+    assert parsed["correct_letters"] == ["B"]
+    assert len(parsed["options"]) == 2
+
+
+def test_a_paragraph_that_is_not_a_question_is_ignored():
+    from s2m_pipeline.quiz_reference import parse_question
+
+    assert parse_question("Module La Sécurité SI – Une priorité pour chacun Quiz") is None
+    assert parse_question("") is None
+
+
+# --------------------------------------------------------------------------
+# Variété des schémas à l'intérieur d'un chapitre
+# --------------------------------------------------------------------------
+
+def plans_of(*archetypes, items=3):
+    return [{"archetype": a, "items": ["x"] * items} for a in archetypes]
+
+
+def test_a_run_of_identical_diagrams_is_broken_up():
+    """Four bar charts in a row read as one slide repeated — the complaint the
+    visuals exist to answer."""
+    from s2m_pipeline.scene_visuals import diversify
+
+    plans = plans_of("bar_chart", "bar_chart", "bar_chart", "bar_chart")
+    diversify(plans)
+    drawn = [p["archetype"] for p in plans]
+
+    assert all(a != b for a, b in zip(drawn, drawn[1:]))
+
+
+def test_diversifying_never_leaves_two_neighbours_alike():
+    from s2m_pipeline.scene_visuals import diversify
+
+    for run in (
+        ["timeline"] * 4 + ["pillars"],
+        ["title_statement"] * 5,
+        ["checklist", "checklist", "checklist", "hierarchy", "checklist"],
+    ):
+        plans = plans_of(*run)
+        diversify(plans)
+        drawn = [p["archetype"] for p in plans]
+        assert all(a != b for a, b in zip(drawn, drawn[1:])), drawn
+
+
+def test_a_substitute_keeps_the_meaning_of_the_scene():
+    """A sequence must not become a set, nor a proportion a ranking: swaps stay
+    inside a group of diagrams that take the same shape of content."""
+    from s2m_pipeline.scene_visuals import _INTERCHANGEABLE, _alternatives
+
+    groups = {a: g for g in _INTERCHANGEABLE for a in g}
+    for archetype in ("timeline", "bar_chart", "stat_reveal"):
+        # Le premier choix reste dans le groupe d'origine.
+        assert _alternatives(archetype, {"items": []})[0] in groups[archetype]
+
+
+def test_an_already_varied_chapter_is_left_alone():
+    from s2m_pipeline.scene_visuals import diversify
+
+    plans = plans_of("timeline", "pillars", "bar_chart", "checklist", "data_flow")
+    before = [p["archetype"] for p in plans]
+
+    assert diversify(plans) == 0
+    assert [p["archetype"] for p in plans] == before
