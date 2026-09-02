@@ -8,7 +8,7 @@ from pathlib import Path
 
 from scenedetect import ContentDetector, SceneManager, open_video
 
-from .config import settings
+from s2m_pipeline.config import settings
 
 
 @dataclass

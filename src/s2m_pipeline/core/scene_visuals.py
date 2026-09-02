@@ -21,8 +21,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import llm
-from .models import Scene, StoryboardScene
+from s2m_pipeline.core import llm
+from s2m_pipeline.models import Scene, StoryboardScene
 
 
 def _overlapping_ocr(scenes: list[Scene], start: float, end: float) -> str:

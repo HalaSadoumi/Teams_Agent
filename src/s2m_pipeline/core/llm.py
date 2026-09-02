@@ -19,7 +19,7 @@ from PIL import Image
 from pydantic import BaseModel
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from .config import settings
+from s2m_pipeline.config import settings
 
 
 def _is_transient(exc: BaseException) -> bool:

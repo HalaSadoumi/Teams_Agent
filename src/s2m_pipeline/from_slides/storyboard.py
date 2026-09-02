@@ -14,8 +14,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import llm
-from .models import Chapter, Scene, StoryboardScene
+from s2m_pipeline.core import llm
+from s2m_pipeline.models import Chapter, Scene, StoryboardScene
 
 # ~2.3 words/second is a reasonable French narration speech rate, used to
 # estimate scene duration from the narration text rather than trusting the

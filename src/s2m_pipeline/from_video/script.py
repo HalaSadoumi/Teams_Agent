@@ -15,8 +15,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import llm
-from .models import Chapter, Scene, TranscriptSegment
+from s2m_pipeline.core import llm
+from s2m_pipeline.models import Chapter, Scene, TranscriptSegment
 
 
 def _overlapping_text(segments: list[TranscriptSegment], start: float, end: float) -> str:

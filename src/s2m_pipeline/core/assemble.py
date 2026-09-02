@@ -22,8 +22,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .audio import audio_duration_seconds
-from .models import Chapter
+from s2m_pipeline.core.audio import audio_duration_seconds
+from s2m_pipeline.models import Chapter
 
 
 @dataclass

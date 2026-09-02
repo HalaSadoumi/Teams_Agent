@@ -119,28 +119,47 @@ savoir d'emblée ce qui les sépare — c'est peu.
 | durée | celle de la session, moins les silences | chapitres de moins de 5 min |
 | sortie vidéo | `remotion/out/` | `remotion/out_pdf/` |
 
-**Les modules propres à chaque entrée** — ce sont les seuls à ne servir qu'à
-un parcours :
+**L'arborescence dit à quoi sert chaque module** : le paquet est rangé en
+trois zones, et une seule regarde la provenance du contenu.
 
-| module | parcours |
-|---|---|
-| `transcription.py`, `scenes.py`, `ocr.py`, `diarization.py` | détaillé (ingestion) |
-| `embeddings.py`, `chaptering.py` | détaillé (chapitrage sémantique) |
-| `content_selection.py`, `narration_original.py` | détaillé (voix réelle) |
-| `build_course.py` | détaillé (orchestrateur) |
-| `pdf_source.py` | essentiel (lecture du support) |
-| `script.py`, `storyboard.py`, `narration.py`, `tts.py` | essentiel (voix de synthèse) |
-| `build_course_from_pdf.py` | essentiel (orchestrateur) |
+```
+src/s2m_pipeline/
+    config.py          réglages, lus par tout le monde
+    models.py          structures de données partagées
 
-**Tout le reste est partagé** et ne doit jamais dépendre de la provenance :
-`config.py`, `models.py`, `llm.py`, `audio.py`, `scene_visuals.py`,
-`scene_images.py`, `chapter_subtitles.py`, `quiz.py`, `quiz_reference.py`,
-`assemble.py`, `web_export.py`, ainsi que l'intégralité de `remotion/src/` et
-de `web/`.
+    core/              commun aux deux entrées — ne connaît pas la provenance
+        llm.py                 appels au modèle de langage, invites, schémas
+        audio.py               extraction, amélioration, découpe, conversion
+        scene_visuals.py       archétype, points et phrase par scène
+        scene_images.py        arrière-plans générés
+        chapter_subtitles.py   appariement et écriture des sous-titres
+        quiz.py                génération des questions
+        quiz_reference.py      lecture d'un quiz officiel fourni en Word
+        assemble.py            concaténation et métadonnées de navigation
+        web_export.py          publication vers la plateforme
 
-C'est ce partage qui fait l'intérêt de l'architecture : ajouter une troisième
-entrée — un document Word, une page web — demande un module de lecture et un
-orchestrateur, rien d'autre.
+    from_video/        entrée « enregistrement de session »
+        transcription.py, scenes.py, ocr.py, diarization.py    ingestion
+        embeddings.py, chaptering.py                           chapitrage
+        content_selection.py, narration_original.py            voix réelle
+        script.py, subtitles.py, pipeline.py                   étapes héritées
+        build_course.py                                        orchestrateur
+
+    from_slides/       entrée « support de formation »
+        pdf_source.py                          lecture du document
+        storyboard.py                          découpage en scènes
+        narration.py, tts.py                   synthèse vocale
+        build_course_from_pdf.py               orchestrateur
+```
+
+Neuf modules sur vingt-neuf sont dans `core/` et servent aux deux parcours ;
+les autres appartiennent à une entrée précise. **Ajouter une troisième source**
+— un document Word, une page web — demande un module de lecture et un
+orchestrateur dans une nouvelle zone, et rien d'autre : tout `core/`,
+`remotion/src/` et `web/` fonctionnent tels quels.
+
+Les imports internes sont **absolus** (`from s2m_pipeline.core import llm`) et
+non relatifs : on voit d'où vient chaque chose sans compter les points.
 
 **Les répertoires de travail**, non versionnés :
 

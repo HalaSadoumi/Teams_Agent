@@ -25,9 +25,10 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import embeddings, llm
-from .config import settings
-from .models import Chapter, Scene, TranscriptSegment
+from s2m_pipeline.from_video import embeddings
+from s2m_pipeline.core import llm
+from s2m_pipeline.config import settings
+from s2m_pipeline.models import Chapter, Scene, TranscriptSegment
 
 
 @dataclass

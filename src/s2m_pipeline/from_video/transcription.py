@@ -6,8 +6,8 @@ from pathlib import Path
 
 from faster_whisper import WhisperModel
 
-from .config import settings
-from .models import TranscriptSegment
+from s2m_pipeline.config import settings
+from s2m_pipeline.models import TranscriptSegment
 
 _model: WhisperModel | None = None
 

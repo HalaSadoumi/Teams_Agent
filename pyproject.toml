@@ -14,10 +14,10 @@ dynamic = ["dependencies"]
 # n'est pas celui de l'environnement virtuel — l'erreur la plus frequente a
 # la prise en main.
 [project.scripts]
-s2m-course = "s2m_pipeline.build_course:main"
-s2m-course-pdf = "s2m_pipeline.build_course_from_pdf:main"
-s2m-publish = "s2m_pipeline.web_export:main"
-s2m-quiz-docx = "s2m_pipeline.quiz_reference:main"
+s2m-course = "s2m_pipeline.from_video.build_course:main"
+s2m-course-pdf = "s2m_pipeline.from_slides.build_course_from_pdf:main"
+s2m-publish = "s2m_pipeline.core.web_export:main"
+s2m-quiz-docx = "s2m_pipeline.core.quiz_reference:main"
 
 [tool.setuptools.dynamic]
 # La liste des dépendances reste dans requirements.txt, qui sert de source

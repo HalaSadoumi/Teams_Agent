@@ -17,11 +17,11 @@ import json
 import shutil
 from pathlib import Path
 
-from .assemble import _format_timestamp
-from .audio import audio_duration_seconds
-from .models import Chapter
+from s2m_pipeline.core.assemble import _format_timestamp
+from s2m_pipeline.core.audio import audio_duration_seconds
+from s2m_pipeline.models import Chapter
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 WEB_DIR = PROJECT_ROOT / "web"
 DATA_DIR = WEB_DIR / "data"
 CATALOG_PATH = DATA_DIR / "courses.json"

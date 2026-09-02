@@ -21,8 +21,13 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import audio, diarization, ocr, scenes, subtitles, transcription
-from .models import Scene, TranscriptSegment
+from s2m_pipeline.core import audio
+from s2m_pipeline.from_video import diarization
+from s2m_pipeline.from_video import ocr
+from s2m_pipeline.from_video import scenes
+from s2m_pipeline.from_video import subtitles
+from s2m_pipeline.from_video import transcription
+from s2m_pipeline.models import Scene, TranscriptSegment
 
 
 @dataclass

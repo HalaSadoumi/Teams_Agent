@@ -9,7 +9,7 @@ from pathlib import Path
 import pytesseract
 from PIL import Image
 
-from .config import PROJECT_ROOT
+from s2m_pipeline.config import PROJECT_ROOT
 
 # On Windows, a fresh shell may not have PATH updated right after a winget
 # install. Fall back to the default UB-Mannheim install location if the

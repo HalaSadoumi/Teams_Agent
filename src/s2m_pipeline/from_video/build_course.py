@@ -35,13 +35,18 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import assemble, chaptering, content_selection, narration_original, pipeline, scene_images
-from . import scene_visuals as scene_visuals_mod
-from .models import Chapter, Scene, StoryboardScene
+from s2m_pipeline.core import assemble
+from s2m_pipeline.from_video import chaptering
+from s2m_pipeline.from_video import content_selection
+from s2m_pipeline.from_video import narration_original
+from s2m_pipeline.from_video import pipeline
+from s2m_pipeline.core import scene_images
+from s2m_pipeline.core import scene_visuals as scene_visuals_mod
+from s2m_pipeline.models import Chapter, Scene, StoryboardScene
 
 STAGES = ["ingest", "chapters", "narration", "visuals", "images", "render", "assemble"]
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 REMOTION_DIR = PROJECT_ROOT / "remotion"
 
 
@@ -113,7 +118,7 @@ def run_ingest(video: Path, paths: Paths) -> None:
         ),
         encoding="utf-8",
     )
-    from . import subtitles
+    from s2m_pipeline.from_video import subtitles
 
     subtitles.write_srt(result.transcript_segments, paths.work / "subtitles.srt")
     subtitles.write_vtt(result.transcript_segments, paths.work / "subtitles.vtt")
@@ -121,7 +126,7 @@ def run_ingest(video: Path, paths: Paths) -> None:
 
 
 def run_chapters(paths: Paths) -> None:
-    from .models import TranscriptSegment
+    from s2m_pipeline.models import TranscriptSegment
 
     scenes = [Scene.model_validate(s) for s in json.loads(paths.scenes.read_text(encoding="utf-8"))]
     segments = [
@@ -135,7 +140,7 @@ def run_chapters(paths: Paths) -> None:
 
 
 def run_narration(paths: Paths) -> None:
-    from .models import TranscriptSegment
+    from s2m_pipeline.models import TranscriptSegment
 
     chapters = [
         Chapter.model_validate(c) for c in json.loads(paths.chapters.read_text(encoding="utf-8"))

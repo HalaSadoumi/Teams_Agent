@@ -15,8 +15,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import tts
-from .models import StoryboardScene
+from s2m_pipeline.from_slides import tts
+from s2m_pipeline.models import StoryboardScene
 
 
 def synthesize_narration(

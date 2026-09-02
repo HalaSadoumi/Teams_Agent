@@ -67,7 +67,7 @@ L'installation crée quatre commandes — `s2m-course`, `s2m-course-pdf`,
 `s2m-publish`, `s2m-quiz-docx` — qui évitent la forme `python -m …`.
 
 La dernière ligne installe le paquet en mode édition. Elle est **indispensable** :
-le code vit dans `src/`, et sans elle toutes les commandes `python -m s2m_pipeline...`
+le code vit dans `src/`, et sans elle toutes les commandes `python -m s2m_pipeline.from_video...`
 échouent avec `ModuleNotFoundError: No module named 's2m_pipeline'`. Le mode
 édition signifie que vos modifications du code sont prises en compte
 immédiatement, sans réinstaller.
@@ -108,7 +108,7 @@ Copier `.env.example` vers `.env` et renseigner :
 **Sprint 1 — ingestion :**
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.pipeline --video "data/ma_formation.mp4" --output output/scenes.json
+.venv\Scripts\python -m s2m_pipeline.from_video.pipeline --video "data/ma_formation.mp4" --output output/scenes.json
 ```
 
 Sortie, dans `output/<nom_video>/` : `scenes.json` (liste d'objets `Scene` :
@@ -119,7 +119,7 @@ frames représentatives par scène.
 **Sprint 2 — chapitrage :**
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.chaptering --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --output output/chapters.json
+.venv\Scripts\python -m s2m_pipeline.from_video.chaptering --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --output output/chapters.json
 ```
 
 - `--dry-run` : affiche les frontières de chapitres candidates sans appeler
@@ -134,14 +134,14 @@ frames représentatives par scène.
 originale de l'intervenant :
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.narration_original --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --master-audio output/<nom_video>/audio.wav --output-dir output/<nom_video>/narration_original --output output/storyboard.json
+.venv\Scripts\python -m s2m_pipeline.from_video.narration_original --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --master-audio output/<nom_video>/audio.wav --output-dir output/<nom_video>/narration_original --output output/storyboard.json
 ```
 
 **Sprint 3 — plan des visuels animés** (choisit un archétype de scène animée
 par scène et remplit ses textes) :
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.scene_visuals --storyboard output/storyboard.json --scenes output/scenes.json --chapters output/chapters.json --output output/scene_visuals.json --resume
+.venv\Scripts\python -m s2m_pipeline.from_video.scene_visuals --storyboard output/storyboard.json --scenes output/scenes.json --chapters output/chapters.json --output output/scene_visuals.json --resume
 ```
 
 **Rendu vidéo** (Remotion). Copier d'abord les données et l'audio dans
@@ -155,7 +155,7 @@ cd remotion && bash render-all.sh
 chapitrage) :
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.assemble --chapters output/chapters.json --video-dir remotion/out --output-dir output/course
+.venv\Scripts\python -m s2m_pipeline.from_video.assemble --chapters output/chapters.json --video-dir remotion/out --output-dir output/course
 ```
 
 ## Deux modes de narration
@@ -177,9 +177,9 @@ que l'intervenant a dit, débarrassé des hésitations.
 synthétisent la voix (edge-tts, gratuit, sans clé API) :
 
 ```bash
-.venv\Scripts\python -m s2m_pipeline.script --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --output output/scripts.json
-.venv\Scripts\python -m s2m_pipeline.storyboard --chapters output/chapters.json --scripts output/scripts.json --scenes output/scenes.json --output output/storyboard.json
-.venv\Scripts\python -m s2m_pipeline.narration --storyboard output/storyboard.json --output-dir output/<nom_video>/narration --output output/storyboard.json
+.venv\Scripts\python -m s2m_pipeline.from_video.script --chapters output/chapters.json --scenes output/scenes.json --transcript output/<nom_video>/transcript.json --output output/scripts.json
+.venv\Scripts\python -m s2m_pipeline.from_video.storyboard --chapters output/chapters.json --scripts output/scripts.json --scenes output/scenes.json --output output/storyboard.json
+.venv\Scripts\python -m s2m_pipeline.from_video.narration --storyboard output/storyboard.json --output-dir output/<nom_video>/narration --output output/storyboard.json
 ```
 
 Ces quatre modules ne sont importés par aucun module du mode A : ils sont

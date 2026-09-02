@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pymupdf
 
-from .config import settings
-from .models import Scene
+from s2m_pipeline.config import settings
+from s2m_pipeline.models import Scene
 
 # Each page occupies this much of the synthetic timeline. The value is
 # arbitrary — only the ordering and the overlaps matter downstream.

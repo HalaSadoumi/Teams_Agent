@@ -28,13 +28,19 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import build_course
-from . import chapter_subtitles, llm, narration, pdf_source, quiz as quiz_mod
-from . import scene_images, scene_visuals as scene_visuals_mod, storyboard as storyboard_mod
-from .config import settings
-from .models import Chapter, Scene, StoryboardScene
+from s2m_pipeline.from_video import build_course
+from s2m_pipeline.core import chapter_subtitles
+from s2m_pipeline.core import llm
+from s2m_pipeline.from_slides import narration
+from s2m_pipeline.from_slides import pdf_source
+from s2m_pipeline.core import quiz as quiz_mod
+from s2m_pipeline.core import scene_images
+from s2m_pipeline.core import scene_visuals as scene_visuals_mod
+from s2m_pipeline.from_slides import storyboard as storyboard_mod
+from s2m_pipeline.config import settings
+from s2m_pipeline.models import Chapter, Scene, StoryboardScene
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 REMOTION_DIR = PROJECT_ROOT / "remotion"
 
 # Narration budget per chapter. At roughly 150 words a minute in French this
@@ -200,8 +206,8 @@ def run_narration(paths: Paths, scenes: list[StoryboardScene]) -> list[Storyboar
 
     from tqdm import tqdm
 
-    from . import audio as audio_mod
-    from . import tts
+    from s2m_pipeline.core import audio as audio_mod
+    from s2m_pipeline.from_slides import tts
 
     paths.narration_dir.mkdir(parents=True, exist_ok=True)
     marks_path = paths.root / "narration_marks.json"
@@ -388,7 +394,7 @@ def run_quiz(
     invents: it reflects what they actually want checked. Generation is the
     fallback for a deck that arrives without one."""
     if official and official.exists():
-        from . import quiz_reference
+        from s2m_pipeline.core import quiz_reference
 
         questions = quiz_reference.parse_document(official)
         paths.quiz.parent.mkdir(parents=True, exist_ok=True)
@@ -406,7 +412,7 @@ def _generate_quiz(paths: Paths, chapters: list[Chapter], scripts: dict[str, str
     # the narration the learner actually hears. One pseudo-segment per chapter,
     # laid on the page timeline the chapters use, so the existing overlap
     # lookup finds exactly that chapter's words.
-    from .models import TranscriptSegment
+    from s2m_pipeline.models import TranscriptSegment
 
     segments = [
         TranscriptSegment(start=c.start, end=c.end, text=scripts.get(c.id, ""))
@@ -437,7 +443,7 @@ def run_publish(
     paths: Paths, course_id: str, title: str, description: str, pdf: Path,
     chapters: list[Chapter], track: str,
 ) -> None:
-    from . import web_export
+    from s2m_pipeline.core import web_export
 
     web_export.export(
         course_id=course_id,

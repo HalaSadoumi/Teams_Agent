@@ -17,7 +17,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import StoryboardScene, TranscriptSegment
+from s2m_pipeline.models import StoryboardScene, TranscriptSegment
 
 # How many dropped segments may sit between two kept ones inside a scene.
 # Scenes are merged across cut passages to keep the cutting rhythm calm, so a

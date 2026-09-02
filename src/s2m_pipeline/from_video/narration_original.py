@@ -21,8 +21,10 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from . import audio, content_selection, llm
-from .models import Chapter, Scene, StoryboardScene, TranscriptSegment
+from s2m_pipeline.core import audio
+from s2m_pipeline.from_video import content_selection
+from s2m_pipeline.core import llm
+from s2m_pipeline.models import Chapter, Scene, StoryboardScene, TranscriptSegment
 
 # Target duration for a narration scene chunk before starting a new one -
 # short enough for a visual change roughly every ~20s, matching the pacing

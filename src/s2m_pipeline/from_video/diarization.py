@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import settings
+from s2m_pipeline.config import settings
 
 
 @dataclass

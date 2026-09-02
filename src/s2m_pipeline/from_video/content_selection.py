@@ -10,8 +10,8 @@ rewriting the text for a synthetic voice (cahier section 6.2, option 1).
 
 from __future__ import annotations
 
-from . import llm
-from .models import Chapter, TranscriptSegment
+from s2m_pipeline.core import llm
+from s2m_pipeline.models import Chapter, TranscriptSegment
 
 
 def classify_chapter_segments(

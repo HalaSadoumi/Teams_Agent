@@ -12,8 +12,8 @@ from pathlib import Path
 
 import edge_tts
 
-from .audio import audio_duration_seconds  # re-exported for existing callers
-from .config import settings
+from s2m_pipeline.core.audio import audio_duration_seconds  # re-exported for existing callers
+from s2m_pipeline.config import settings
 
 __all__ = ["synthesize", "synthesize_with_marks", "audio_duration_seconds"]
 

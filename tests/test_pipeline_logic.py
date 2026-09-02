@@ -14,9 +14,10 @@ from __future__ import annotations
 
 import pytest
 
-from s2m_pipeline import chaptering, narration_original
-from s2m_pipeline.chapter_subtitles import match_scene_segments
-from s2m_pipeline.llm import _clip_on_word
+from s2m_pipeline.from_video import chaptering
+from s2m_pipeline.from_video import narration_original
+from s2m_pipeline.core.chapter_subtitles import match_scene_segments
+from s2m_pipeline.core.llm import _clip_on_word
 from s2m_pipeline.models import TranscriptSegment
 
 
@@ -206,7 +207,7 @@ def test_backdrop_seed_is_stable_across_processes():
     runs gave 20468, 8410 and 54640 for the same scene, so every execution
     fetched a fresh set of images while the comment claimed the opposite.
     """
-    from s2m_pipeline.scene_images import seed_for
+    from s2m_pipeline.core.scene_images import seed_for
 
     # Valeur figée : si elle change, les arrière-plans de tous les cours
     # déjà produits ne seraient plus reproductibles.
@@ -222,7 +223,7 @@ def test_every_model_call_is_forced_to_temperature_zero():
     The temperature is applied in `_generate_content`, the single entry point,
     so a call site added later cannot forget it.
     """
-    from s2m_pipeline import llm
+    from s2m_pipeline.core import llm
 
     class FakeConfig:
         temperature = None
@@ -241,7 +242,7 @@ def test_every_model_call_is_forced_to_temperature_zero():
 
 def test_an_explicit_temperature_is_left_alone():
     """A call that deliberately asks for sampling keeps its own setting."""
-    from s2m_pipeline import llm
+    from s2m_pipeline.core import llm
 
     class FakeConfig:
         temperature = 0.8
@@ -264,7 +265,7 @@ def test_an_explicit_temperature_is_left_alone():
 
 def slide(index: int, text: str):
     from s2m_pipeline.models import Scene
-    from s2m_pipeline.pdf_source import PAGE_SECONDS
+    from s2m_pipeline.from_slides.pdf_source import PAGE_SECONDS
 
     return Scene(
         id=f"page_{index:03d}",
@@ -276,7 +277,7 @@ def slide(index: int, text: str):
 
 def test_section_dividers_are_recognised_without_knowing_the_subject():
     """A divider is short and in capitals — a rule that holds for any deck."""
-    from s2m_pipeline import pdf_source
+    from s2m_pipeline.from_slides import pdf_source
 
     assert pdf_source.is_section_divider("DÉFINITIONS ET PRINCIPES DE BASE")
     assert pdf_source.is_section_divider("IMPACT DE LA CYBERCRIMINALITÉ")
@@ -292,7 +293,7 @@ def test_section_dividers_are_recognised_without_knowing_the_subject():
 
 
 def test_chapters_never_span_two_sections():
-    from s2m_pipeline import pdf_source
+    from s2m_pipeline.from_slides import pdf_source
 
     pages = [
         slide(0, "PREMIERE SECTION"),
@@ -310,7 +311,7 @@ def test_chapters_never_span_two_sections():
 def test_a_long_section_is_split_evenly_rather_than_leaving_a_stub():
     """Filling to the target and letting the remainder trail produced a
     251-word chapter followed by a 72-word one; the split is now balanced."""
-    from s2m_pipeline import pdf_source
+    from s2m_pipeline.from_slides import pdf_source
 
     pages = [slide(0, "SECTION UNIQUE")] + [slide(i, "mot " * 100) for i in range(1, 7)]
     groups = pdf_source.group_into_chapters(pages)
@@ -322,7 +323,7 @@ def test_a_long_section_is_split_evenly_rather_than_leaving_a_stub():
 
 def test_deck_length_drives_the_number_of_chapters():
     """Twice the material, roughly twice the chapters — no fixed count."""
-    from s2m_pipeline import pdf_source
+    from s2m_pipeline.from_slides import pdf_source
 
     short = [slide(0, "SECTION")] + [slide(i, "mot " * 100) for i in range(1, 4)]
     long = [slide(0, "SECTION")] + [slide(i, "mot " * 100) for i in range(1, 8)]
@@ -339,7 +340,7 @@ def test_deck_length_drives_the_number_of_chapters():
 def test_official_question_is_read_exactly():
     """The wording, the options and the answers must survive untouched: this
     is the trainer's quiz, not one to paraphrase."""
-    from s2m_pipeline.quiz_reference import parse_question
+    from s2m_pipeline.core.quiz_reference import parse_question
 
     parsed = parse_question(
         'Question: Quels sont les trois objectifs fondamentaux de la cybersécurité, '
@@ -356,7 +357,7 @@ def test_official_question_is_read_exactly():
 
 
 def test_single_answer_question_is_read():
-    from s2m_pipeline.quiz_reference import parse_question
+    from s2m_pipeline.core.quiz_reference import parse_question
 
     parsed = parse_question(
         "Question: Qu'est-ce que la \"Confidentialité\" ? "
@@ -370,7 +371,7 @@ def test_single_answer_question_is_read():
 
 
 def test_a_paragraph_that_is_not_a_question_is_ignored():
-    from s2m_pipeline.quiz_reference import parse_question
+    from s2m_pipeline.core.quiz_reference import parse_question
 
     assert parse_question("Module La Sécurité SI – Une priorité pour chacun Quiz") is None
     assert parse_question("") is None
@@ -387,7 +388,7 @@ def plans_of(*archetypes, items=3):
 def test_a_run_of_identical_diagrams_is_broken_up():
     """Four bar charts in a row read as one slide repeated — the complaint the
     visuals exist to answer."""
-    from s2m_pipeline.scene_visuals import diversify
+    from s2m_pipeline.core.scene_visuals import diversify
 
     plans = plans_of("bar_chart", "bar_chart", "bar_chart", "bar_chart")
     diversify(plans)
@@ -397,7 +398,7 @@ def test_a_run_of_identical_diagrams_is_broken_up():
 
 
 def test_diversifying_never_leaves_two_neighbours_alike():
-    from s2m_pipeline.scene_visuals import diversify
+    from s2m_pipeline.core.scene_visuals import diversify
 
     for run in (
         ["timeline"] * 4 + ["pillars"],
@@ -413,7 +414,7 @@ def test_diversifying_never_leaves_two_neighbours_alike():
 def test_a_substitute_keeps_the_meaning_of_the_scene():
     """A sequence must not become a set, nor a proportion a ranking: swaps stay
     inside a group of diagrams that take the same shape of content."""
-    from s2m_pipeline.scene_visuals import _INTERCHANGEABLE, _alternatives
+    from s2m_pipeline.core.scene_visuals import _INTERCHANGEABLE, _alternatives
 
     groups = {a: g for g in _INTERCHANGEABLE for a in g}
     for archetype in ("timeline", "bar_chart", "stat_reveal"):
@@ -422,7 +423,7 @@ def test_a_substitute_keeps_the_meaning_of_the_scene():
 
 
 def test_an_already_varied_chapter_is_left_alone():
-    from s2m_pipeline.scene_visuals import diversify
+    from s2m_pipeline.core.scene_visuals import diversify
 
     plans = plans_of("timeline", "pillars", "bar_chart", "checklist", "data_flow")
     before = [p["archetype"] for p in plans]
