@@ -40,6 +40,9 @@ class Runner:
         self._wake = threading.Event()
         self._process: subprocess.Popen | None = None
         self._current: str | None = None
+        # Retires volontairement : sans cela, la fusion a l'ecriture les
+        # ferait revenir depuis le fichier a la sauvegarde suivante.
+        self._forgotten: set[str] = set()
         for directory in (UPLOADS_DIR, LOGS_DIR, OUTPUT_ROOT):
             directory.mkdir(parents=True, exist_ok=True)
         self._load()
@@ -65,9 +68,39 @@ class Runner:
         self._wake.set()
 
     def _save(self) -> None:
+        """Ecrire sans effacer ce qu'on ne connait pas.
+
+        Une deuxieme instance du serveur -- lancee par erreur, ou restee en vie
+        apres un arret incomplet -- tient sa propre liste en memoire. Si elle
+        ecrit ce fichier apres nous, la difference entre les deux listes est
+        perdue : une production deposee sur une instance disparait de l'autre.
+        C'est arrive. On repart donc de ce qui est sur le disque et on n'y
+        remplace que les travaux dont on a la charge.
+
+        Cela reduit la fenetre sans la fermer : deux instances qui lisent puis
+        ecrivent en meme temps peuvent encore se marcher dessus. La vraie
+        protection est qu'il n'y en ait qu'une, ce que le port occupe garantit
+        -- uvicorn refuse de demarrer si 8123 est deja pris.
+        """
         STORE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        payload = {"jobs": [self._jobs[i].to_dict() for i in self._order]}
-        STORE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+        try:
+            existing = json.loads(STORE_FILE.read_text(encoding="utf-8")).get("jobs", [])
+        except (OSError, ValueError):
+            existing = []
+
+        mine = {job_id: self._jobs[job_id].to_dict() for job_id in self._order}
+        merged, seen = [], set()
+        for entry in existing:
+            job_id = entry.get("id")
+            if job_id in self._forgotten:
+                continue
+            merged.append(mine.get(job_id, entry))
+            seen.add(job_id)
+        merged += [mine[job_id] for job_id in self._order if job_id not in seen]
+
+        STORE_FILE.write_text(
+            json.dumps({"jobs": merged}, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
 
     # ------------------------------------------------------------------ lecture
     def output_dir(self, job: Job) -> Path:
@@ -163,6 +196,7 @@ class Runner:
                 return False
             del self._jobs[job_id]
             self._order.remove(job_id)
+            self._forgotten.add(job_id)
             self._save()
         return True
 

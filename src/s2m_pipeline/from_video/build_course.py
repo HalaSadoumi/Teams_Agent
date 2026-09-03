@@ -217,22 +217,34 @@ def run_images(paths: Paths) -> None:
 
 
 def _sync_remotion_inputs(paths: Paths) -> None:
-    """Stage this run's data where the Remotion project reads it."""
+    """Stage this run's data where the Remotion project reads it.
+
+    Le dossier est vide au depart de chaque rendu. C'est indispensable, pas une
+    precaution : les deux entrees numerotent leurs scenes de la meme facon, donc
+    `chapter_03_scene_00.wav` existe dans les deux cours. Une version qui ne
+    copiait que les fichiers absents a laisse la voix de l'intervenant en place
+    pour toutes les scenes dont l'identifiant existait deja, et le cours issu du
+    support est sorti avec la mauvaise voix sur trente-deux scenes.
+    """
     public = REMOTION_DIR / "public"
-    (public / "audio").mkdir(parents=True, exist_ok=True)
-    (public / "backdrops").mkdir(parents=True, exist_ok=True)
+    for nom in ("audio", "backdrops"):
+        shutil.rmtree(public / nom, ignore_errors=True)
+        (public / nom).mkdir(parents=True, exist_ok=True)
 
     shutil.copy(paths.storyboard, public / "storyboard.json")
     shutil.copy(paths.visuals, public / "scene_visuals.json")
 
+    # public/ ne contient que des copies de travail : il doit pouvoir etre vide
+    # sans rien perdre. Le logo est un asset source, il vit donc dans
+    # remotion/assets/ et est remis en place ici a chaque rendu.
+    logo = REMOTION_DIR / "assets" / "s2m-logo.png"
+    if logo.exists():
+        shutil.copy(logo, public / logo.name)
+
     for src in paths.narration_dir.glob("*.wav"):
-        dst = public / "audio" / src.name
-        if not dst.exists():
-            shutil.copy(src, dst)
+        shutil.copy(src, public / "audio" / src.name)
     for src in paths.backdrops.glob("*.jpg"):
-        dst = public / "backdrops" / src.name
-        if not dst.exists():
-            shutil.copy(src, dst)
+        shutil.copy(src, public / "backdrops" / src.name)
 
     available = sorted(p.stem for p in (public / "backdrops").glob("*.jpg"))
     (public / "backdrops.json").write_text(json.dumps(available), encoding="utf-8")

@@ -12,6 +12,8 @@ the whole file in well under a second.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from s2m_pipeline.from_video import chaptering
@@ -430,3 +432,47 @@ def test_an_already_varied_chapter_is_left_alone():
 
     assert diversify(plans) == 0
     assert [p["archetype"] for p in plans] == before
+
+
+# ------------------------------------------------- mise en scene pour le rendu
+def test_staging_replaces_a_file_left_by_another_course(tmp_path, monkeypatch):
+    """Le dossier de rendu ne doit rien garder de la production precedente.
+
+    Les deux entrees numerotent leurs scenes de la meme facon : le fichier
+    chapter_03_scene_00.wav existe dans le cours issu de l'enregistrement comme
+    dans celui issu du support. Une version qui ne copiait que les fichiers
+    absents a laisse la voix de l'intervenant en place sur trente-deux scenes du
+    cours qui devait etre lu par la voix de synthese, et le defaut ne s'entendait
+    qu'a la lecture du montage.
+    """
+    from s2m_pipeline.from_video import build_course
+
+    remotion = tmp_path / "remotion"
+    (remotion / "public" / "audio").mkdir(parents=True)
+    (remotion / "public" / "backdrops").mkdir(parents=True)
+    monkeypatch.setattr(build_course, "REMOTION_DIR", remotion)
+
+    # Ce qu'une production precedente a laisse derriere elle.
+    (remotion / "public" / "audio" / "chapter_03_scene_00.wav").write_bytes(b"voix precedente")
+    (remotion / "public" / "audio" / "chapter_09_scene_00.wav").write_bytes(b"scene inconnue ici")
+    (remotion / "public" / "backdrops" / "chapter_09_scene_00.jpg").write_bytes(b"vieux fond")
+
+    course = tmp_path / "course"
+    (course / "work" / "narration").mkdir(parents=True)
+    (course / "work" / "backdrops").mkdir(parents=True)
+    (course / "work" / "narration" / "chapter_03_scene_00.wav").write_bytes(b"voix attendue")
+    (course / "work" / "backdrops" / "chapter_03_scene_00.jpg").write_bytes(b"fond attendu")
+    (course / "storyboard.json").write_text("[]", encoding="utf-8")
+    (course / "scene_visuals.json").write_text("{}", encoding="utf-8")
+
+    build_course._sync_remotion_inputs(build_course.Paths(course))
+
+    audio = remotion / "public" / "audio"
+    assert (audio / "chapter_03_scene_00.wav").read_bytes() == b"voix attendue"
+    # La scene qui n'appartient pas a cette production ne doit plus etre la :
+    # c'est elle qui, restee en place, avait fourni la mauvaise voix.
+    assert not (audio / "chapter_09_scene_00.wav").exists()
+    assert not (remotion / "public" / "backdrops" / "chapter_09_scene_00.jpg").exists()
+
+    listing = json.loads((remotion / "public" / "backdrops.json").read_text(encoding="utf-8"))
+    assert listing == ["chapter_03_scene_00"]
