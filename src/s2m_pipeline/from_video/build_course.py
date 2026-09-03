@@ -225,6 +225,13 @@ def _sync_remotion_inputs(paths: Paths) -> None:
     shutil.copy(paths.storyboard, public / "storyboard.json")
     shutil.copy(paths.visuals, public / "scene_visuals.json")
 
+    # public/ ne contient que des copies de travail : il doit pouvoir etre vide
+    # sans rien perdre. Le logo est un asset source, il vit donc dans
+    # remotion/assets/ et est remis en place ici a chaque rendu.
+    logo = REMOTION_DIR / "assets" / "s2m-logo.png"
+    if logo.exists():
+        shutil.copy(logo, public / logo.name)
+
     for src in paths.narration_dir.glob("*.wav"):
         dst = public / "audio" / src.name
         if not dst.exists():

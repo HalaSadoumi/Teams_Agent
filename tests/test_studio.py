@@ -118,3 +118,55 @@ def test_the_official_quiz_is_passed_when_there_is_one(tmp_path):
     )
     command = jobs.command_for(job, tmp_path, "python")
     assert command[command.index("--quiz-docx") + 1] == "/tmp/quiz.docx"
+
+
+# ------------------------------------------------------- persistance du studio
+def test_saving_keeps_jobs_written_by_another_instance(tmp_path, monkeypatch):
+    """Une production deposee ailleurs ne doit pas disparaitre a notre ecriture.
+
+    Deux serveurs qui tournent en meme temps tiennent chacun leur liste en
+    memoire. Le second qui ecrit effacait la difference : c'est ainsi qu'une
+    production reelle a ete perdue.
+    """
+    from s2m_pipeline.studio import runner as runner_mod
+
+    store = tmp_path / "jobs.json"
+    monkeypatch.setattr(runner_mod, "STORE_FILE", store)
+    monkeypatch.setattr(runner_mod, "UPLOADS_DIR", tmp_path / "supports")
+    monkeypatch.setattr(runner_mod, "LOGS_DIR", tmp_path / "logs")
+    monkeypatch.setattr(runner_mod, "OUTPUT_ROOT", tmp_path / "output")
+
+    worker = runner_mod.Runner()
+    # Deja terminee : le fil d'execution la laisse tranquille, et le test porte
+    # sur la fusion a l'ecriture plutot que sur une course avec le travailleur.
+    worker.submit(jobs.Job(id="a", course_id="a", title="A", description="", track="essentiel",
+                           pdf_name="a.pdf", pdf_path="a.pdf", state=jobs.DONE))
+
+    # Une autre instance ajoute sa propre production, directement sur le disque.
+    data = json.loads(store.read_text(encoding="utf-8"))
+    data["jobs"].append({"id": "b", "course_id": "b", "title": "B", "description": "",
+                         "track": "essentiel", "pdf_name": "b.pdf", "pdf_path": "b.pdf",
+                         "state": "queued"})
+    store.write_text(json.dumps(data), encoding="utf-8")
+
+    worker._save()
+    kept = {entry["id"] for entry in json.loads(store.read_text(encoding="utf-8"))["jobs"]}
+    assert kept == {"a", "b"}
+
+
+def test_a_forgotten_job_does_not_come_back(tmp_path, monkeypatch):
+    from s2m_pipeline.studio import runner as runner_mod
+
+    store = tmp_path / "jobs.json"
+    monkeypatch.setattr(runner_mod, "STORE_FILE", store)
+    monkeypatch.setattr(runner_mod, "UPLOADS_DIR", tmp_path / "supports")
+    monkeypatch.setattr(runner_mod, "LOGS_DIR", tmp_path / "logs")
+    monkeypatch.setattr(runner_mod, "OUTPUT_ROOT", tmp_path / "output")
+
+    worker = runner_mod.Runner()
+    job = jobs.Job(id="a", course_id="a", title="A", description="", track="essentiel",
+                   pdf_name="a.pdf", pdf_path="a.pdf", state=jobs.DONE)
+    worker.submit(job)
+    assert worker.forget("a")
+    worker._save()
+    assert json.loads(store.read_text(encoding="utf-8"))["jobs"] == []
