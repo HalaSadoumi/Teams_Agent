@@ -37,6 +37,7 @@ résume pas), 261 scènes animées, 1 445 sous-titres, 51 questions.
 | Arrière-plans générés | fonctionnel, service gratuit sans garantie |
 | Rendu vidéo | fonctionnel |
 | Quiz, sous-titres, assemblage, plateforme web | fonctionnel |
+| Studio — dépôt d'un support, suivi, publication | fonctionnel |
 | Empaquetage SCORM | non commencé |
 | Interface de validation avant diffusion | non commencée |
 
@@ -49,9 +50,10 @@ Les limites connues et les suites possibles sont listées en fin de
 python -m pytest tests/ -q
 ```
 
-Quatorze tests couvrent les fonctions qui portent les décisions du système
-(calibration du chapitrage, rythme des scènes, calage des sous-titres). Purs :
-ni réseau, ni modèle, ni clé d'API.
+Trente-neuf tests couvrent les fonctions qui portent les décisions du système
+(calibration du chapitrage, rythme des scènes, calage des sous-titres,
+découpage d'un support, diversification des schémas, avancement d'une
+production). Purs : ni réseau, ni modèle, ni clé d'API.
 
 ## Installation
 
@@ -63,8 +65,8 @@ python -m venv .venv
 
 Activez ensuite l'environnement à chaque session (`.venv\Scripts\Activate.ps1`) :
 sans cela, `python` reste celui du système et le paquet n'y est pas installé.
-L'installation crée quatre commandes — `s2m-course`, `s2m-course-pdf`,
-`s2m-publish`, `s2m-quiz-docx` — qui évitent la forme `python -m …`.
+L'installation crée cinq commandes — `s2m-course`, `s2m-course-pdf`,
+`s2m-publish`, `s2m-quiz-docx`, `s2m-studio` — qui évitent la forme `python -m …`.
 
 La dernière ligne installe le paquet en mode édition. Elle est **indispensable** :
 le code vit dans `src/`, et sans elle toutes les commandes `python -m s2m_pipeline.from_video...`
@@ -102,6 +104,42 @@ Copier `.env.example` vers `.env` et renseigner :
   sont étiquetés `speaker_1`.
 - `GEMINI_API_KEY` — requis à partir du Sprint 2 (chapitrage). Clé gratuite
   sur https://aistudio.google.com/apikey.
+
+## Le studio
+
+Produire un cours sans ouvrir de terminal :
+
+```bash
+s2m-studio
+```
+
+Le catalogue est alors sur http://127.0.0.1:8123/ et le studio sur
+http://127.0.0.1:8123/studio.html. On y dépose le support PDF, un titre, et
+éventuellement le quiz officiel en Word ; la chaîne s'exécute et publie le
+cours au catalogue à la fin. La page peut être fermée, la production continue.
+
+Ce qu'il faut savoir avant de s'en servir :
+
+- **Une production à la fois.** Un rendu sature le processeur ; deux
+  productions simultanées ne vont pas plus vite. Les suivantes attendent leur
+  tour, et la position dans la file est affichée.
+- **Environ une heure trente** pour un support d'une trentaine de pages sur un
+  poste sans carte graphique.
+- **Le quota de rédaction est affiché en haut à droite.** Un chapitre coûte une
+  requête au modèle de rédaction, plafonné à vingt par jour en offre gratuite.
+  Au-delà, la chaîne bascule sur le modèle allégé, qui écrit une prose plus
+  plate et perd parfois les accents. Le compteur est là pour qu'on le voie
+  avant, pas après.
+- **Reprendre plutôt que recommencer.** Une production arrêtée — annulée,
+  échouée, ou coupée par un redémarrage du serveur — se reprend à l'étape où
+  elle s'est arrêtée. Rien n'est refait.
+- **Le studio n'appelle pas la chaîne dans son propre processus** : il lance
+  exactement la commande `s2m-course-pdf` documentée ci-dessous, dans un
+  sous-processus. Ce qui est lancé depuis le navigateur est ce qui est lancé à
+  la main, et le journal de chaque production est consultable depuis la page.
+
+Le studio n'expose pas d'authentification : il est prévu pour tourner sur le
+poste ou le réseau interne, pas sur une adresse publique.
 
 ## Utilisation
 

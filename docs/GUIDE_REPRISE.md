@@ -96,8 +96,11 @@ Puis, pour publier vers la plateforme de consultation :
 
 ```bash
 s2m-publish --course-id <id> --subtitles output/<id>/subtitles
-python -m http.server 8123 --directory web
+s2m-studio
 ```
+
+`s2m-studio` sert la plateforme **et** le studio sur le même port : le
+catalogue sur `/`, le dépôt d'un nouveau support sur `/studio.html`.
 
 Comptez environ **sept heures** pour un enregistrement de 95 minutes sur un
 poste sans carte graphique. Les deux étapes coûteuses — génération des images

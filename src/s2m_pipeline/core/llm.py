@@ -10,6 +10,8 @@ diagram's layout, a highlighted region, a demo).
 
 from __future__ import annotations
 
+import datetime
+import json
 from pathlib import Path
 
 from google import genai
@@ -758,6 +760,52 @@ Reponds avec :
 """
 
 
+# --------------------------------------------------------------------- quota
+# Le modele de redaction est plafonne a 20 requetes par jour en offre gratuite.
+# Rien ne permet d'interroger ce compteur chez le fournisseur, donc on tient le
+# notre : sans lui, l'interface ne peut pas prevenir qu'un support trop long
+# finira redige par le modele de repli, et le defaut ne se voit qu'au montage.
+WRITING_DAILY_QUOTA = 20
+_QUOTA_FILE = Path(__file__).resolve().parents[3] / "work" / "writing_quota.json"
+
+
+def _record_writing_call(fell_back: bool) -> None:
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.loads(_QUOTA_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    if data.get("day") != today:
+        data = {"day": today, "calls": 0, "fallbacks": 0}
+    data["calls"] += 1
+    if fell_back:
+        data["fallbacks"] += 1
+    try:
+        _QUOTA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _QUOTA_FILE.write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        # Un compteur d'affichage ne doit jamais faire echouer une production.
+        pass
+
+
+def writing_quota_today() -> dict:
+    """Ce qui a ete consomme aujourd'hui, pour affichage."""
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.loads(_QUOTA_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    if data.get("day") != today:
+        data = {"day": today, "calls": 0, "fallbacks": 0}
+    used = min(data["calls"], WRITING_DAILY_QUOTA)
+    return {
+        "limit": WRITING_DAILY_QUOTA,
+        "used": used,
+        "remaining": max(0, WRITING_DAILY_QUOTA - used),
+        "fallbacks": data["fallbacks"],
+    }
+
+
 def generate_slide_chapter(
     slides_text: str,
     page_images: list[Path],
@@ -797,6 +845,7 @@ def generate_slide_chapter(
 
     try:
         response = call(settings.gemini_model_writing)
+        _record_writing_call(fell_back=False)
     except genai_errors.APIError as exc:
         # The writing model's free tier is capped at 20 requests a day, which a
         # long deck plus a re-run exhausts. Falling back keeps the run going;
@@ -809,5 +858,6 @@ def generate_slide_chapter(
             flush=True,
         )
         response = call(settings.gemini_model)
+        _record_writing_call(fell_back=True)
 
     return SlideChapterContent.model_validate_json(response.text)

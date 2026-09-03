@@ -242,10 +242,13 @@ def run_render(paths: Paths, out_name: str = "out") -> None:
     """Render one video per chapter.
 
     `out_name` lets a second course render beside the first instead of
-    overwriting it: the slide-deck pipeline writes to remotion/out_pdf."""
+    overwriting it. It may name a nested folder -- the slide-deck pipeline
+    passes out_pdf/<course_id>, so two courses never share a target: without
+    that, the second course would find the first's chapter_00.mp4, consider it
+    already rendered, and publish someone else's video."""
     _sync_remotion_inputs(paths)
     out_dir = REMOTION_DIR / out_name
-    out_dir.mkdir(exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     chapters = json.loads(paths.chapters.read_text(encoding="utf-8"))
     npx = shutil.which("npx") or "npx"

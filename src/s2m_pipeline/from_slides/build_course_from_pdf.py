@@ -332,7 +332,7 @@ def main() -> None:
         return
 
     _step(8, total, "Render — one video per chapter")
-    build_course.run_render(paths, out_name="out_pdf")
+    build_course.run_render(paths, out_name=f"out_pdf/{args.course_id}")
     if args.stop_after == "render":
         return
 
@@ -422,11 +422,16 @@ def _generate_quiz(paths: Paths, chapters: list[Chapter], scripts: dict[str, str
     _done(f"{sum(len(q) for q in quizzes.values())} questions across {len(quizzes)} chapters")
 
 
-def make_thumbnail(paths: Paths, chapters: list[Chapter]) -> Path | None:
+def render_dir(course_id: str) -> Path:
+    """Where this course's videos land. One folder per course, never shared."""
+    return REMOTION_DIR / "out_pdf" / course_id
+
+
+def make_thumbnail(paths: Paths, chapters: list[Chapter], course_id: str) -> Path | None:
     """A still from the first chapter, so the catalogue card is not a grey box."""
     if not chapters:
         return None
-    source = REMOTION_DIR / "out_pdf" / f"{chapters[0].id}.mp4"
+    source = render_dir(course_id) / f"{chapters[0].id}.mp4"
     if not source.exists():
         return None
     target = paths.root / "work" / "thumbnail.jpg"
@@ -450,10 +455,10 @@ def run_publish(
         title=title,
         description=description,
         chapters_path=paths.chapters,
-        video_dir=REMOTION_DIR / "out_pdf",
+        video_dir=render_dir(course_id),
         quiz_path=paths.quiz if paths.quiz.exists() else None,
         pdf_path=pdf,
-        thumbnail_path=make_thumbnail(paths, chapters),
+        thumbnail_path=make_thumbnail(paths, chapters, course_id),
         subtitle_dir=paths.subtitles if paths.subtitles.exists() else None,
         copy_videos=True,
         track=track,

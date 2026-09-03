@@ -35,5 +35,12 @@ web/data/
 # Donnees mises en scene pour le moteur de rendu (regenerees a chaque execution)
 remotion/public/
 
-# Scripts de travail ponctuels
+# Scripts de travail ponctuels. La negation est indispensable : sans elle la
+# regle avale aussi les __init__.py, les sous-paquets ne sont pas versionnes,
+# et un clone neuf echoue a l'installation avec ModuleNotFoundError.
 _*.py
+!__init__.py
+!__main__.py
+
+# Etat du studio : supports deposes, journaux, file d'attente, compteur de quota.
+work/

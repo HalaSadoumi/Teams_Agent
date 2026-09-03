@@ -18,6 +18,9 @@ s2m-course = "s2m_pipeline.from_video.build_course:main"
 s2m-course-pdf = "s2m_pipeline.from_slides.build_course_from_pdf:main"
 s2m-publish = "s2m_pipeline.core.web_export:main"
 s2m-quiz-docx = "s2m_pipeline.core.quiz_reference:main"
+# Le site et son studio, servis ensemble : la publication n'a rien a
+# transporter puisque la chaine ecrit deja dans web/data/.
+s2m-studio = "s2m_pipeline.studio.server:main"
 
 [tool.setuptools.dynamic]
 # La liste des dépendances reste dans requirements.txt, qui sert de source
