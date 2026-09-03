@@ -332,7 +332,7 @@ def main() -> None:
         return
 
     _step(8, total, "Render — one video per chapter")
-    build_course.run_render(paths, out_name="out_pdf")
+    build_course.run_render(paths, out_name=f"out_pdf/{args.course_id}")
     if args.stop_after == "render":
         return
 
@@ -397,12 +397,22 @@ def run_quiz(
         from s2m_pipeline.core import quiz_reference
 
         questions = quiz_reference.parse_document(official)
-        paths.quiz.parent.mkdir(parents=True, exist_ok=True)
-        paths.quiz.write_text(
-            json.dumps({"questions": questions}, ensure_ascii=False, indent=2), encoding="utf-8"
+        if questions:
+            paths.quiz.parent.mkdir(parents=True, exist_ok=True)
+            paths.quiz.write_text(
+                json.dumps({"questions": questions}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            _done(f"{len(questions)} questions from the official quiz")
+            return
+        # A Word file the parser cannot read yields an empty list. Writing it
+        # would publish a course whose final exam has no questions, and nobody
+        # would find out until a learner reached the end.
+        print(
+            f"  WARNING: no question could be read from {official.name} — "
+            "falling back to generated questions",
+            flush=True,
         )
-        _done(f"{len(questions)} questions from the official quiz")
-        return
 
     _generate_quiz(paths, chapters, scripts)
 
@@ -422,11 +432,16 @@ def _generate_quiz(paths: Paths, chapters: list[Chapter], scripts: dict[str, str
     _done(f"{sum(len(q) for q in quizzes.values())} questions across {len(quizzes)} chapters")
 
 
-def make_thumbnail(paths: Paths, chapters: list[Chapter]) -> Path | None:
+def render_dir(course_id: str) -> Path:
+    """Where this course's videos land. One folder per course, never shared."""
+    return REMOTION_DIR / "out_pdf" / course_id
+
+
+def make_thumbnail(paths: Paths, chapters: list[Chapter], course_id: str) -> Path | None:
     """A still from the first chapter, so the catalogue card is not a grey box."""
     if not chapters:
         return None
-    source = REMOTION_DIR / "out_pdf" / f"{chapters[0].id}.mp4"
+    source = render_dir(course_id) / f"{chapters[0].id}.mp4"
     if not source.exists():
         return None
     target = paths.root / "work" / "thumbnail.jpg"
@@ -450,10 +465,10 @@ def run_publish(
         title=title,
         description=description,
         chapters_path=paths.chapters,
-        video_dir=REMOTION_DIR / "out_pdf",
+        video_dir=render_dir(course_id),
         quiz_path=paths.quiz if paths.quiz.exists() else None,
         pdf_path=pdf,
-        thumbnail_path=make_thumbnail(paths, chapters),
+        thumbnail_path=make_thumbnail(paths, chapters, course_id),
         subtitle_dir=paths.subtitles if paths.subtitles.exists() else None,
         copy_videos=True,
         track=track,
