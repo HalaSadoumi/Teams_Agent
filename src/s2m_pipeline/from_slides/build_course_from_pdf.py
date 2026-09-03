@@ -397,12 +397,22 @@ def run_quiz(
         from s2m_pipeline.core import quiz_reference
 
         questions = quiz_reference.parse_document(official)
-        paths.quiz.parent.mkdir(parents=True, exist_ok=True)
-        paths.quiz.write_text(
-            json.dumps({"questions": questions}, ensure_ascii=False, indent=2), encoding="utf-8"
+        if questions:
+            paths.quiz.parent.mkdir(parents=True, exist_ok=True)
+            paths.quiz.write_text(
+                json.dumps({"questions": questions}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            _done(f"{len(questions)} questions from the official quiz")
+            return
+        # A Word file the parser cannot read yields an empty list. Writing it
+        # would publish a course whose final exam has no questions, and nobody
+        # would find out until a learner reached the end.
+        print(
+            f"  WARNING: no question could be read from {official.name} — "
+            "falling back to generated questions",
+            flush=True,
         )
-        _done(f"{len(questions)} questions from the official quiz")
-        return
 
     _generate_quiz(paths, chapters, scripts)
 

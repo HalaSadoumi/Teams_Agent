@@ -98,7 +98,7 @@ function jobHtml(job) {
           <p class="job-meta">
             <code>${escapeHtml(job.course_id)}</code> ·
             ${escapeHtml(job.pdf_name)}
-            ${job.quiz_path ? " · quiz officiel" : ""}
+            ${job.quiz_path ? ` · quiz officiel, ${job.quiz_questions} questions` : ""}
             · ${escapeHtml(since(job.started_at || job.created_at))}
           </p>
         </div>

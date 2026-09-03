@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from s2m_pipeline.core import llm
+from s2m_pipeline.core import quiz_reference
 from s2m_pipeline.studio import jobs as jobs_mod
 from s2m_pipeline.studio.runner import PROJECT_ROOT, UPLOADS_DIR, Runner
 
@@ -61,12 +62,28 @@ async def create_job(
 
     job_id = uuid.uuid4().hex[:12]
     pdf_path = _store_upload(pdf, job_id, ".pdf")
-    quiz_path = None
+    quiz_path, quiz_questions = None, None
     if quiz is not None and quiz.filename:
         if not quiz.filename.lower().endswith(".docx"):
             pdf_path.unlink(missing_ok=True)
             raise HTTPException(422, "Le quiz officiel doit être un fichier Word (.docx).")
         quiz_path = _store_upload(quiz, job_id, ".docx")
+        # Lire le quiz maintenant plutôt qu'au neuvième étage : un document au
+        # mauvais format publierait un cours sans évaluation, et le défaut ne
+        # se verrait qu'une heure et demie plus tard.
+        try:
+            quiz_questions = len(quiz_reference.parse_document(quiz_path))
+        except Exception:
+            quiz_questions = 0
+        if not quiz_questions:
+            pdf_path.unlink(missing_ok=True)
+            quiz_path.unlink(missing_ok=True)
+            raise HTTPException(
+                422,
+                "Aucune question n'a pu être lue dans ce quiz. Le document attend un "
+                "paragraphe par question, ses options notées « A) », « B) »… et une "
+                "ligne « Bonnes réponses : A, B ».",
+            )
 
     job = jobs_mod.Job(
         id=job_id,
@@ -80,6 +97,7 @@ async def create_job(
         pdf_name=pdf.filename or "support.pdf",
         pdf_path=str(pdf_path),
         quiz_path=str(quiz_path) if quiz_path else None,
+        quiz_questions=quiz_questions,
     )
     runner.submit(job)
     return JSONResponse(runner.get(job.id), status_code=201)

@@ -159,6 +159,7 @@ class Job:
     pdf_name: str
     pdf_path: str
     quiz_path: str | None = None
+    quiz_questions: int | None = None
     state: str = QUEUED
     created_at: str = field(default_factory=now)
     started_at: str | None = None
